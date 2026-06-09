@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg:#0c0c0f;--surface:#131318;--s2:#1a1a22;--s3:#222230;
+  --bd:#2a2a38;--bd2:#333345;--t:#e8e8f0;--t2:#a0a0b8;--m:#606078;
+  --green:#6ef9a8;--green-dim:rgba(110,249,168,.12);
+  --red:#f96e6e;--red-dim:rgba(249,110,110,.12);
+  --accent:#c8f97e;--accent-dim:rgba(200,249,126,.12);
+  --blue:#7eb8f9;--blue-dim:rgba(126,184,249,.12);
+  --pink:#f97ec8;--pink-dim:rgba(249,126,200,.12);
+  --amber:#f9c67e;--amber-dim:rgba(249,198,126,.12);
+  --purple:#a07ef9;--purple-dim:rgba(160,126,249,.12);
+  --teal:#5ef0d8;--lumeu:#ff9f43;--lumeu-dim:rgba(255,159,67,.12);
+  --rui:#7eb8f9;--ana:#f97ec8;--conjunta:#f9c67e;--familia:#c8f97e;
+  --fd:'DM Serif Display',serif;--fb:'DM Sans',sans-serif;--fm:'DM Mono',monospace;
+  --r:16px;--rs:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--t);font-family:var(--fb);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--surface);}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px;}
+h1,h2,h3{font-family:var(--fd);font-weight:400;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.fade-up{animation:fadeUp .4s ease forwards;}
