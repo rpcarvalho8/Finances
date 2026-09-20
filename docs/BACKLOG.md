@@ -45,11 +45,11 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 ## SEC-001 — Remove committed Enable Banking private key from the working tree
 
 - **Objective:** Stop shipping `e05443a5-b2a3-454d-9f7a-703fb7e9a0ad.pem` on the default branch.
-- **Context:** SECURITY_AUDIT SEC-A01. Filename = hardcoded CLIENT_ID.
-- **Dependencies:** **SEC-D01 (PENDING)**. Rotation in Enable Banking console must happen **before or with** deletion or the bank-connect button dies.
+- **Context:** SECURITY_AUDIT SEC-A01. Filename = previously hardcoded CLIENT_ID.
+- **Dependencies:** **SEC-D01 (DECIDED 2026-09-20, option 1)**.
 - **Acceptance criteria:** File absent from HEAD; `*.pem` gitignored; app reads key only from env or an out-of-repo path; **docs never contain PEM body**.
-- **Risks:** **Destructive / availability.** History still contains the key unless SEC-D01 option 2. Treat key as burned either way.
-- **Status:** `blocked`
+- **Risks:** **Destructive / availability.** History still contains the key at SHA `170427a`. Treat key as burned. Bank connect stays down until SEC-004 (human console rotation).
+- **Status:** `done` (2026-09-20). PEM deleted from HEAD in a forward commit; init no longer scans cwd for `*.pem` or `${CLIENT_ID}.pem`. Console rotation remains SEC-004.
 
 ---
 
@@ -57,32 +57,32 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 
 - **Objective:** Stop tracking the SQLite file at repo root.
 - **Context:** SECURITY_AUDIT SEC-A02; schema is not `initDB()`.
-- **Dependencies:** **SEC-D02**, **DB-D01**.
+- **Dependencies:** **SEC-D02 (DECIDED 2026-09-20)**. DB-D01 (canonical schema) remains PENDING.
 - **Acceptance criteria:** File not in HEAD; gitignore covers `*.db` / `local.db`; README/docs say to create `data/finance.db` via seed.
-- **Risks:** If anyone pointed `DATABASE_URL` at `file:local.db`, app data that only existed there is lost (this clone’s `local.db` is the committed sample, not `finance.db`).
-- **Status:** `blocked`
+- **Risks:** If anyone pointed `DATABASE_URL` at `file:local.db`, app data that only existed there is lost (this clone’s `local.db` is the committed sample, not `finance.db`). History still contains the file at SHA `170427a`.
+- **Status:** `done` (2026-09-20). Use `DATABASE_URL=file:./data/finance.db` and `npm run db:seed` (or a future `db:init`) to create the intended app DB.
 
 ---
 
 ## SEC-003 — Tighten `.gitignore` for secrets and databases
 
 - **Objective:** Ignore `*.pem`, `*.db`, `local.db`, remaining env files, backups.
-- **Context:** Current ignore is `node_modules/`, `.next/`, `.env.local`, `.env`, `data/*.db`, `backups/`, `uploads/`, `*.log`.
-- **Dependencies:** SEC-D01/D02 if files must be un-tracked in the same change.
-- **Acceptance criteria:** New clones cannot accidentally add PEM/DB; existing tracked files still need `git rm --cached` (approval).
-- **Risks:** Low, but is a **non-docs** change — not in this PR.
-- **Status:** `blocked` (on human approval to touch `.gitignore`)
+- **Context:** Previous ignore was `node_modules/`, `.next/`, `.env.local`, `.env`, `data/*.db`, `backups/`, `uploads/`, `*.log`.
+- **Dependencies:** SEC-D01/D02 (DECIDED 2026-09-20).
+- **Acceptance criteria:** New clones cannot accidentally add PEM/DB; existing tracked files still need `git rm --cached` (done in the same change).
+- **Risks:** Low.
+- **Status:** `done` (2026-09-20). `.gitignore` now includes `*.pem`, `*.db`, `local.db`; existing `data/*.db` / `data/*.db-journal` rules kept.
 
 ---
 
 ## SEC-004 — Rotate Open Banking application credentials
 
 - **Objective:** Invalidate the committed keypair and hardcoded application UUID; issue new credentials stored only in env.
-- **Context:** SEC-A01, SEC-A06. Remove loca.lt default redirect.
-- **Dependencies:** SEC-D01, OB-D01, OPS-D01.
+- **Context:** SEC-A01, SEC-A06. Code defaults (burned UUID / loca.lt redirect) were removed with SEC-001; the **console rotation is still human-owned**.
+- **Dependencies:** SEC-D01 (DECIDED option 1), OB-D01, OPS-D01.
 - **Acceptance criteria:** Old UUID no longer in source as a default; redirect URI from env with no tunnel hostname in git; provider console shows new key.
-- **Risks:** Breaks bank connect until Settings is reconfigured. **Do not put the new secret in the repo.**
-- **Status:** `blocked`
+- **Risks:** Breaks bank connect until Settings is reconfigured. **Do not put the new secret in the repo.** History still has the old private key at commit `170427a`.
+- **Status:** `blocked` on **human** Enable Banking console rotation (old UUID is burned). Code-side defaults are already gone.
 
 ---
 
@@ -235,8 +235,10 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 
 - [x] Audit evidence collected
 - [x] Docs pack written under `/docs`
-- [x] No feature/refactors in `app/`, `lib/`, `components/`, `scripts/`
-- [x] Decisions listed as PENDING
+- [x] No feature/refactors in `app/`, `lib/`, `components/`, `scripts/` *(Phase 0 docs PR; later SEC-D01/D02 remediates init + gitignore only)*
+- [x] Decisions listed as PENDING *(SEC-D01/D02 decided 2026-09-20)*
 - [x] Security issues documented without secret contents
-- [ ] Human approval of Phase 0 (coordinator)
-- [ ] Then schedule blocked SEC/AUTH/DB items
+- [x] SEC-001 / SEC-002 / SEC-003: PEM and `local.db` removed from HEAD; `*.pem` / `*.db` gitignored (history **not** purged)
+- [ ] SEC-004 human rotation of Enable Banking key in the provider console
+- [ ] Human approval of remaining Phase 0 decisions (coordinator)
+- [ ] Then schedule blocked AUTH/DB items

@@ -4,7 +4,9 @@ Evidence-based snapshot of **what this repository actually is**. Contrast with t
 
 ## One-line summary
 
-Finance OS today is a **single-commit, local-first Next.js 14 household finance dashboard** for two named people (Rui and Ana) plus a joint account, with **manual/CSV data entry**, **plaintext API-key storage**, an **unauthenticated Anthropic chat** that dumps live DB rows into the prompt, and **incomplete Open Banking prototypes**. It is not a modular multi-tenant financial operating system.
+Finance OS today is a **local-first Next.js 14 household finance dashboard** for two named people (Rui and Ana) plus a joint account, with **manual/CSV data entry**, **plaintext API-key storage**, an **unauthenticated Anthropic chat** that dumps live DB rows into the prompt, and **incomplete Open Banking prototypes**. It is not a modular multi-tenant financial operating system.
+
+Initial commit: `170427a` (2026-06-09). Phase 0 docs landed on `main` as `fed1990`. On **2026-09-20** (SEC-D01 option 1 + SEC-D02) the committed Enable Banking PEM and `local.db` were **removed from HEAD** in a forward commit. **Git history still contains both files** at `170427a` until an optional future purge. The Enable Banking application key **must be rotated** in the provider console (SEC-004); treat the old UUID as burned.
 
 ## Product surface (real routes)
 
@@ -107,9 +109,11 @@ See also [ARCHITECTURE_AUDIT.md](./ARCHITECTURE_AUDIT.md). Short table:
 
 Two parallel sketches plus one wired UI button:
 
-1. **Wired:** Settings button → `POST /api/sync/bank/init` (JWT RS256 using committed `.pem` or env secret) → user redirect → `GET /api/sync/bank/callback`.
+1. **Wired:** Settings button → `POST /api/sync/bank/init` (JWT RS256 using `ENABLE_BANKING_APPLICATION_SECRET` or `ENABLE_BANKING_PRIVATE_KEY_PATH`; **fails closed** if application key, redirect URI, or private key env is missing) → user redirect → `GET /api/sync/bank/callback`.
 2. **Unwired module:** `app/lib/enablebanking.ts` (throws at import if env missing; talks about `bank_requisitions` / `bank_balances` tables **not created by `initDB`**). **No other file imports it.**
 3. **Unwired module:** `app/lib/gocardless.ts` (Nordigen `ob.nordigen.com`; same missing tables; throws at import). **No other file imports it.**
+
+The previously committed `.pem` is **absent from HEAD** (still in history at `170427a`). Init no longer hardcodes the burned application UUID or a `loca.lt` redirect. Bank connect will not work until a human rotates credentials in the Enable Banking console and sets env vars (SEC-004).
 
 Consent UX is a single “connect bank” button. No per-account consent store in `initDB`. Callback stores **access_token in SQLite** (`bank_accounts.access_token`) and assigns all imported txns to `rui`.
 
@@ -169,7 +173,7 @@ After `npm install --legacy-peer-deps`:
 | Dual investment UIs | `/investimentos` vs `/investments` |
 | Dual LUMEU UIs | `/lumeu` vs `/business/lumeu` (byte-identical page vs component) |
 | Dual DB clients | `lib/db.ts` vs unused `app/lib/db-server.ts` |
-| Dual DB files/schemas | `data/finance.db` (intended) vs committed `local.db` (test-init schema) |
+| Dual DB files/schemas | `data/finance.db` (intended) vs historically committed `local.db` (test-init schema; **removed from HEAD 2026-09-20**, still in git history at `170427a`) |
 | Dual Open Banking stacks | Enable Banking routes vs unused Enable Banking lib vs unused GoCardless lib |
 | Dual transaction models | `transactions` (used) vs `personal_transactions` (actions only) |
 | Dual ID types | INTEGER AUTOINCREMENT in `lib/db.ts` vs TEXT PK in `local.db` / `test-init.js` |
