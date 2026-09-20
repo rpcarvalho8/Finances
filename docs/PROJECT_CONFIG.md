@@ -37,11 +37,11 @@ components/          Sidebar, shared UI, business pages
 lib/db.ts            Canonical libsql client + CREATE TABLE IF NOT EXISTS
 scripts/             seed.ts, setup-ubuntu.sh (no init-db.ts)
 test-init.js         Alternate schema writer targeting file:local.db
-local.db             Committed SQLite file (legacy/experimental schema)
-e05443a5-….pem       Committed PKCS#8 private key (Enable Banking client id filename)
-.env.example         Env template (Portuguese comments)
+.env.example         Env template (Portuguese comments; Enable Banking placeholders)
 .claude/             Local Claude Code permissions
 ```
+
+`local.db` and the Enable Banking `.pem` were removed from HEAD on 2026-09-20 (still in git history at `170427a`).
 
 There is **no** root `README.md`, **no** `/docs` before this pack, **no** `Dockerfile`, **no** `.github/` workflows or PR template, **no** `middleware.ts`.
 
@@ -92,16 +92,17 @@ From `.env.example` (placeholders, not live secrets):
 - `BYBIT_API_KEY`, `BYBIT_SECRET`
 - `BINANCE_API_KEY`, `BINANCE_SECRET`
 - `TRADING212_API_KEY`
+- `ENABLE_BANKING_APPLICATION_KEY`
+- `ENABLE_BANKING_APPLICATION_SECRET` (or `ENABLE_BANKING_PRIVATE_KEY_PATH`)
+- `ENABLE_BANKING_REDIRECT_URI`
+- `ENABLE_BANKING_ASPSP_COUNTRY`, `ENABLE_BANKING_ASPSP_NAME`
 
 Used in code but **not** listed in `.env.example`:
 
-- `ENABLE_BANKING_APPLICATION_KEY` / `NEXT_PUBLIC_ENABLE_BANKING_APPLICATION_KEY`
-- `ENABLE_BANKING_APPLICATION_SECRET`
-- `ENABLE_BANKING_REDIRECT_URI` / `NEXT_PUBLIC_ENABLE_BANKING_REDIRECT_URI`
-- `ENABLE_BANKING_ASPSP_COUNTRY`, `ENABLE_BANKING_ASPSP_NAME`
+- `NEXT_PUBLIC_ENABLE_BANKING_APPLICATION_KEY` / `NEXT_PUBLIC_ENABLE_BANKING_REDIRECT_URI` (callback still reads the `NEXT_PUBLIC_` application key)
 - `GOCARDLESS_SECRET_ID`, `GOCARDLESS_SECRET_KEY`
 
-Hardcoded fallbacks in `app/api/sync/bank/init/route.ts` (not env):
+Hardcoded fallbacks in `app/api/sync/bank/init/route.ts` were **removed 2026-09-20** (SEC-D01 option 1). Init now requires `ENABLE_BANKING_APPLICATION_KEY` and `ENABLE_BANKING_REDIRECT_URI` (fail closed). Previously:
 
 - Client id matching the committed `.pem` filename
 - Redirect `https://small-bats-appear.loca.lt/api/sync/bank/callback`
@@ -113,8 +114,8 @@ Hardcoded fallbacks in `app/api/sync/bank/init/route.ts` (not env):
 | Path | Git | `.gitignore` | Role |
 | --- | --- | --- | --- |
 | `file:./data/finance.db` | Not present (data/ empty / missing) | `data/*.db` ignored | Intended app DB |
-| `local.db` (repo root) | **Tracked** (57 344 bytes) | **Not ignored** | Written by `test-init.js`; **different schema** from `lib/db.ts` |
-| `e05443a5-b2a3-454d-9f7a-703fb7e9a0ad.pem` | **Tracked** (3 271 bytes) | **Not ignored** | Enable Banking JWT signing key |
+| `local.db` (repo root) | **Removed from HEAD 2026-09-20**; still in history at `170427a` | `*.db` / `local.db` ignored | Written by `test-init.js`; **different schema** from `lib/db.ts` |
+| `e05443a5-b2a3-454d-9f7a-703fb7e9a0ad.pem` | **Removed from HEAD 2026-09-20**; still in history at `170427a` | `*.pem` ignored | Enable Banking JWT signing key (burned; rotate in console) |
 
 ## Audit toolchain snapshot
 

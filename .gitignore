@@ -2,6 +2,9 @@ node_modules/
 .next/
 .env.local
 .env
+*.pem
+*.db
+local.db
 data/*.db
 data/*.db-journal
 backups/

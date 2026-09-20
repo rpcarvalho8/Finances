@@ -1,6 +1,6 @@
 # DECISIONS
 
-Open decisions that **block** implementation after Phase 0. All items are **PENDING** until a human records an outcome here (or in a follow-up commit).
+Open decisions that **block** implementation after Phase 0. Items stay **PENDING** until a human records an outcome here (or in a follow-up commit). SEC-D01 and SEC-D02 were decided 2026-09-20.
 
 Format: ID, question, context, options, recommendation (non-binding), status.
 
@@ -9,14 +9,14 @@ Format: ID, question, context, options, recommendation (non-binding), status.
 ## SEC-D01 — Secret remediation for committed PEM (and history)
 
 - **Question:** How should the Enable Banking private key file `e05443a5-…pem` be removed, and should git history be rewritten?
-- **Context:** Key is in the initial commit on `main`. `.gitignore` does not ignore `*.pem`. Application id is hardcoded to the same UUID. See SECURITY_AUDIT SEC-A01.
+- **Context:** Key is in the initial commit on `main`. At decision time `.gitignore` did not ignore `*.pem` and the application id was hardcoded to the same UUID. See SECURITY_AUDIT SEC-A01.
 - **Options:**
   1. Rotate key at Enable Banking, delete file in a forward commit, keep history (key remains recoverable from SHA `170427a`).
   2. Rotate key, then `git filter-repo` / BFG, force-push `main` (destructive; all clones must re-clone).
   3. Leave file, privatize repo only (insufficient if the repo was ever cloned).
 - **Recommendation:** (2) if any clone may have been public or shared; otherwise (1)+immediate rotation still required. **Never** commit a replacement PEM.
-- **Status:** **PENDING**
-- **Blocks:** SEC-001, SEC-004
+- **Status:** **DECIDED** (2026-09-20) — **Option 1.** Rotate the Enable Banking key out-of-band (human, provider console; SEC-004). Delete the PEM in a **forward** commit. **Do not** rewrite git history or force-push. The key remains recoverable from SHA `170427a` and is treated as **burned**. Never commit a replacement PEM.
+- **Blocks:** SEC-004 (console rotation still human-owned)
 
 ---
 
@@ -26,8 +26,8 @@ Format: ID, question, context, options, recommendation (non-binding), status.
 - **Context:** Different schema from `lib/db.ts`; small sample rows. See DATABASE_AUDIT.
 - **Options:** Delete forward-only vs history purge vs keep as fixture (not recommended).
 - **Recommendation:** Delete + gitignore `*.db`; do not use as a test fixture without synthetic data.
-- **Status:** **PENDING**
-- **Blocks:** SEC-002, DB-001
+- **Status:** **DECIDED** (2026-09-20) — Delete `local.db` from the working tree and gitignore `*.db` / `local.db`. Forward commit only; **no** history purge. History still contains the file at SHA `170427a`.
+- **Blocks:** DB-001 (canonical schema freeze still PENDING as DB-D01)
 
 ---
 

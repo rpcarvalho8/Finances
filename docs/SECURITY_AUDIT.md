@@ -2,30 +2,32 @@
 
 Evidence-based findings. **No private key material, no password values, and no full transaction dumps are included.**
 
+**2026-09-20 remediation (SEC-D01 option 1 + SEC-D02):** the Enable Banking PEM and `local.db` were deleted from HEAD in a forward commit; `.gitignore` now covers `*.pem`, `*.db`, and `local.db`. Init no longer falls back to the burned application UUID or a `loca.lt` redirect. **Git history still contains both secrets at commit `170427a`.** Treat the old key as burned. **A human must rotate** the Enable Banking application key/keypair in the provider console (SEC-004). History rewrite / force-push was explicitly **not** done.
+
 Severity: **Critical** / **High** / **Medium** / **Low** / **Info**.
 
 ---
 
 ## SEC-A01 — PKCS#8 private key committed to git (Critical)
 
-- **File (tracked):** `e05443a5-b2a3-454d-9f7a-703fb7e9a0ad.pem`
+- **File (tracked at audit):** `e05443a5-b2a3-454d-9f7a-703fb7e9a0ad.pem` — **removed from HEAD on 2026-09-20** (SEC-D01 option 1). Still present in git history at `170427a`.
 - **Size:** 3271 bytes, 51 lines
 - **Header (type only):** `-----BEGIN PRIVATE KEY-----` (unencrypted PKCS#8; `file(1)` reports a private key with no password)
-- **Wiring:** `app/api/sync/bank/init/route.ts` default `CLIENT_ID` is the UUID that matches this filename. `getPrivateKey()` reads `${CLIENT_ID}.pem` from `process.cwd()`, then **any `*.pem` in the project root**.
-- **`.gitignore`:** does **not** ignore `*.pem`.
-- **Impact:** Anyone with repo read access can impersonate the Enable Banking application (sign RS256 client JWTs). Treat the key as **compromised**. Rotation must happen **outside** this docs PR (human + Enable Banking console).
+- **Wiring (after 2026-09-20):** `app/api/sync/bank/init/route.ts` requires `ENABLE_BANKING_APPLICATION_KEY` and `ENABLE_BANKING_REDIRECT_URI` (fail closed). Private key from `ENABLE_BANKING_APPLICATION_SECRET` or `ENABLE_BANKING_PRIVATE_KEY_PATH` only — **no** cwd `*.pem` scan and **no** `${CLIENT_ID}.pem` lookup.
+- **`.gitignore`:** ignores `*.pem` (as of 2026-09-20).
+- **Impact:** Anyone with repo **history** access can still impersonate the old Enable Banking application. Treat the key as **compromised**. Rotation must happen **outside** git (human + Enable Banking console, SEC-004).
 
-Do not paste the key into issues, chat, or these docs. Do not “fix” by rewriting git history in Phase 0 without approval (Decision SEC-D01).
+Do not paste the key into issues, chat, or these docs. History rewrite was **not** performed (Decision SEC-D01 option 1).
 
 ---
 
 ## SEC-A02 — SQLite database file committed to git (High)
 
-- **File (tracked):** `local.db` (57 344 bytes)
+- **File (tracked at audit):** `local.db` (57 344 bytes) — **removed from HEAD on 2026-09-20** (SEC-D02). Still present in git history at `170427a`.
 - **Role:** experimental schema from `test-init.js`, not the app’s intended `data/finance.db`
 - **Contents:** 4 transactions, 1 goal (`Conta Pessoal 10k` / owner `Rui`), business names, category labels “Trading Forex” / “Crypto”
-- **`.gitignore`:** ignores `data/*.db` only
-- **Impact:** even a small DB in git can leak amounts and labels; it also trains clones to commit DB files. Seed data in `scripts/seed.ts` is a related PII issue (SEC-A08) even though it is TypeScript, not SQLite.
+- **`.gitignore`:** ignores `*.db`, `local.db`, and `data/*.db` (as of 2026-09-20)
+- **Impact:** even a small DB in git history can leak amounts and labels. Seed data in `scripts/seed.ts` is a related PII issue (SEC-A08) even though it is TypeScript, not SQLite.
 
 ---
 
@@ -72,14 +74,16 @@ Settings UI posts XTB password, Bybit/Binance secrets, Anthropic key. Combined w
 
 ## SEC-A06 — Hardcoded Enable Banking client id + localtunnel redirect (High)
 
-`app/api/sync/bank/init/route.ts`:
+**Status (2026-09-20):** code defaults removed from `app/api/sync/bank/init/route.ts`. Init now requires `ENABLE_BANKING_APPLICATION_KEY` and `ENABLE_BANKING_REDIRECT_URI` (fail closed). Residual risk: the burned UUID and `loca.lt` hostname remain in **git history** (`170427a`) and must not be reused.
+
+Originally:
 
 - Fallback application key UUID (same as PEM filename)
 - Fallback redirect `https://small-bats-appear.loca.lt/api/sync/bank/callback`
 
 `loca.lt` tunnels are typically **unauthenticated public URLs**. If that tunnel is reused, OAuth codes can be stolen (authorization code interception). `NEXT_PUBLIC_ENABLE_BANKING_APPLICATION_KEY` being public-by-design plus a committed private key is a complete client credential pair.
 
-Init also logs `CLIENT_ID`, candidate key paths, JWT header/payload, and a prefix of the signature input.
+Init previously logged `CLIENT_ID`, candidate key paths, JWT header/payload, and a prefix of the signature input (reduced 2026-09-20; do not log private key material).
 
 ---
 
@@ -161,9 +165,8 @@ Init signs RS256 JWTs with the PEM. Callback `exchangeCodeForToken` HMAC-SHA256s
 
 ## What Phase 0 will not do
 
-- Rotate the Enable Banking key
-- `git filter-repo` the PEM/DB out of history
+- Rotate the Enable Banking key **in the provider console** (still human, SEC-004)
+- `git filter-repo` the PEM/DB out of history (explicitly declined; SEC-D01 option 1)
 - Add authentication
-- Change `.gitignore` **wait** — user said docs only, no refactors of app/lib/components/scripts except docs. **Do not edit `.gitignore` in this PR** even though that is a one-line security improvement. Record as SEC-003 blocked on approval.
 
-Human approval required before any destructive secret remediation (see [DECISIONS.md](./DECISIONS.md)).
+Phase 0 docs did not edit `.gitignore` or application code. The 2026-09-20 follow-up **did** delete the PEM and `local.db` from HEAD, tighten `.gitignore`, and fail-close Enable Banking init. Human approval remains required for console rotation and any future history purge.
