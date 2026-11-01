@@ -19,6 +19,7 @@ This folder is the **Phase 0 (audit + planning)** output for [rpcarvalho8/Financ
 | 9 | [BACKLOG.md](./BACKLOG.md) | Phase 0 task IDs (audit closure + blocked remediations) |
 | 10 | [ROADMAP.md](./ROADMAP.md) | Phased path after approval |
 | 11 | [AGENT_PROTOCOL.md](./AGENT_PROTOCOL.md) | Planner vs Cursor executor lifecycle |
+| 12 | [ANALISE_CLAUDE.md](./ANALISE_CLAUDE.md) | Task 0 analysis by the Claude executor (pt-PT): reuse vs replace, priorities, new risks, open questions |
 
 ## Status of this phase
 
