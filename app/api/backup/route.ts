@@ -1,13 +1,9 @@
-import { NextResponse } from 'next/server'
-import fs from 'fs'; import path from 'path'
+// Disabled in A2 (2026-11-06). Previous implementation: git show 4880d7f:app/api/backup/route.ts
+import { disabledFeature } from '@/lib/disabled'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
-  try {
-    const dbPath=(process.env.DATABASE_URL||'file:./data/finance.db').replace('file:','')
-    const buf=fs.readFileSync(path.resolve(dbPath))
-    const date=new Date().toISOString().slice(0,10)
-    return new NextResponse(buf,{headers:{'Content-Type':'application/octet-stream','Content-Disposition':`attachment; filename="finance-backup-${date}.db"`}})
-  } catch(e:any) { return NextResponse.json({error:String(e)},{status:500}) }
+// Use `npm run db:backup` on the machine that holds the database.
+export function GET() {
+  return disabledFeature('download do backup')
 }

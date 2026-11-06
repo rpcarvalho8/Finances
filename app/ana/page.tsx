@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { StatCard, Card, SectionTitle, CategoryBar, TxnRow, GoalBar, PageHeader, AddTransactionForm, ImportCSV, fmt } from '@/components/UI'
+import { useBudgets } from '@/lib/useBudgets'
 
-const INCOME = 301.18
 const CATS = [
   {name:'Necessidades Básicas',icon:'🏠',color:'#f97ec8',pct:.55},
   {name:'Lazer',icon:'🎭',color:'#a07ef9',pct:.15},
@@ -21,6 +21,7 @@ export default function AnaPage() {
   const [goals,setGoals]=useState<any[]>([])
   const [month,setMonth]=useState('all')
   const [loading,setLoading]=useState(true)
+  const { ana_income: INCOME } = useBudgets()
 
   const load=useCallback(async()=>{
     setLoading(true)
@@ -59,7 +60,7 @@ export default function AnaPage() {
   return (
     <div className="fade-up">
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:'20px',flexWrap:'wrap',gap:'10px'}}>
-        <PageHeader title="Ana —" italic="Conta Pessoal" sub="Novo salário · 2026" accent="var(--ana)"/>
+        <PageHeader title="Ana —" italic="Conta Pessoal" sub="ActivoBank · 2026" accent="var(--ana)"/>
         <ImportCSV owner="ana"/>
       </div>
       <div style={{display:'flex',gap:'6px',marginBottom:'18px'}}>
@@ -69,22 +70,16 @@ export default function AnaPage() {
         <StatCard label="Receita pessoal" value={fmt(income)} sub="após contrib. conjunta" color="var(--green)" pin="var(--green)"/>
         <StatCard label="Despesas" value={fmt(expenses)} sub="este período" color="var(--red)" pin="var(--red)"/>
         <StatCard label="Disponível" value={fmt(income-expenses)} sub="saldo" color="var(--ana)" pin="var(--ana)"/>
-        <StatCard label="Meta: Emergência" value="0 €" sub="/ 5.000 €" color="var(--teal)" pin="var(--teal)"/>
-      </div>
-      <div style={{background:'var(--pink-dim)',border:'1px solid rgba(249,126,200,.2)',borderRadius:'var(--rs)',padding:'10px 16px',marginBottom:'18px',display:'flex',gap:'20px',flexWrap:'wrap',fontSize:'12px'}}>
-        {[{l:'Novo salário',v:'601,18 €',c:'var(--ana)'},{l:'→ Conta conjunta',v:'300,00 €',c:'var(--amber)'},{l:'→ Conta pessoal',v:'301,18 €',c:'var(--green)'}].map(item=>(
-          <div key={item.l}><div style={{fontSize:'10px',color:'var(--m)',textTransform:'uppercase',letterSpacing:'.06em'}}>{item.l}</div><div style={{fontFamily:'var(--fm)',fontWeight:500,color:item.c}}>{item.v}</div></div>
-        ))}
-        <div style={{marginLeft:'auto',display:'flex',alignItems:'center'}}><span style={{fontSize:'11px',color:'var(--amber)'}}>⚠ % ajustadas ao novo salário</span></div>
+        <StatCard label="Metas" value={String(goals.length)} sub="ativas" color="var(--teal)" pin="var(--teal)"/>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 290px',gap:'16px',alignItems:'start'}}>
         <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
           <Card>
-            <SectionTitle right={`base: ${fmt(INCOME)}/mês`}>Orçamento</SectionTitle>
+            <SectionTitle right={INCOME>0?`base: ${fmt(INCOME)}/mês`:'base: definir em Definições'}>Orçamento</SectionTitle>
             {loading?<div style={{color:'var(--m)',fontSize:'12px'}}>A carregar...</div>:(
               <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
                 {CATS.filter(c=>catTotals[c.name]||c.pct>0).map(c=>(
-                  <CategoryBar key={c.name} name={c.name} icon={c.icon} spent={catTotals[c.name]||0} budget={c.pct>0?INCOME*c.pct:0} color={c.color} percent={Math.round((catTotals[c.name]||0)/INCOME*100)}/>
+                  <CategoryBar key={c.name} name={c.name} icon={c.icon} spent={catTotals[c.name]||0} budget={c.pct>0?INCOME*c.pct:0} color={c.color} percent={Math.round((catTotals[c.name]||0)/Math.max(INCOME,1)*100)}/>
                 ))}
                 {Object.keys(catTotals).length===0&&<div style={{color:'var(--m)',fontSize:'12px',textAlign:'center',padding:'20px'}}>Sem transações. Importa o extrato CSV.</div>}
               </div>
@@ -100,7 +95,6 @@ export default function AnaPage() {
         </div>
         <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
           <Card><SectionTitle>Metas — Ana</SectionTitle>{goals.length===0?<div style={{color:'var(--m)',fontSize:'12px'}}>Sem metas definidas</div>:goals.map((g:any)=>(<GoalBar key={g.id} name={g.name} saved={g.saved} target={g.target} color={g.color||'var(--ana)'}/>))}</Card>
-          <Card style={{borderTop:'2px solid var(--ana)'}}><SectionTitle>Prioridade</SectionTitle><div style={{fontSize:'12px',color:'var(--t2)',lineHeight:1.7}}>Com apenas <strong style={{color:'var(--ana)'}}>301 €</strong> pessoais, prioriza o <strong>Fundo de Emergência</strong> (meta: 5.000 €) antes de investir.</div></Card>
         </div>
       </div>
     </div>

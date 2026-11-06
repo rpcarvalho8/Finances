@@ -37,11 +37,9 @@ echo -e "${GREEN}✓ Dependências instaladas${NC}"
 echo ""
 echo -e "${YELLOW}[3/4]${NC} A configurar ambiente..."
 if [ ! -f "$DIR/.env.local" ]; then
-  cp "$DIR/.env.example" "$DIR/.env.local" 2>/dev/null || cat > "$DIR/.env.local" << 'ENVEOF'
-ANTHROPIC_API_KEY=sk-ant-COLOCA_AQUI_A_TUA_KEY
-AUTH_SECRET=dev-secret-finance-os-2026
-RUI_PASSWORD=rui123
-ANA_PASSWORD=ana123
+  # No default passwords (SEC-A09). Users are created later with a local script (A3).
+  cp "$DIR/.env.example" "$DIR/.env.local" 2>/dev/null || cat > "$DIR/.env.local" << ENVEOF
+AUTH_SECRET=$(openssl rand -hex 32)
 DATABASE_URL=file:./data/finance.db
 NEXT_PUBLIC_APP_NAME=Finance OS
 NODE_ENV=development
@@ -56,9 +54,9 @@ echo -e "${GREEN}✓ Ambiente configurado${NC}"
 
 # 4. Base de dados
 echo ""
-echo -e "${YELLOW}[4/4]${NC} A inicializar base de dados com dados reais..."
-mkdir -p data
-npx tsx scripts/seed.ts
+echo -e "${YELLOW}[4/4]${NC} A inicializar base de dados (sem apagar dados existentes)..."
+npm run db:init
+echo -e "  Para dados de demonstração sintéticos: ${BLUE}npm run db:seed${NC}"
 echo -e "${GREEN}✓ Base de dados pronta${NC}"
 
 echo ""

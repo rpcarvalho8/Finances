@@ -37,7 +37,7 @@ export default async function DashboardPage() {
   const people = [
     {href:'/rui',label:'Rui',color:'#7eb8f9',inc:txns.filter(t=>t.owner==='rui'&&t.amount>0).reduce((s,t)=>s+t.amount,0),out:txns.filter(t=>t.owner==='rui'&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0)},
     {href:'/ana',label:'Ana',color:'#f97ec8',inc:txns.filter(t=>t.owner==='ana'&&t.amount>0).reduce((s,t)=>s+t.amount,0),out:txns.filter(t=>t.owner==='ana'&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0)},
-    {href:'/conjunta',label:'Conta Conjunta',color:'#f9c67e',inc:650,out:txns.filter(t=>t.owner==='conjunta'&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0)},
+    {href:'/conjunta',label:'Conta Conjunta',color:'#f9c67e',inc:txns.filter(t=>t.owner==='conjunta'&&t.amount>0).reduce((s,t)=>s+t.amount,0),out:txns.filter(t=>t.owner==='conjunta'&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0)},
   ]
 
   return (

@@ -93,7 +93,7 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 - **Dependencies:** **SEC-D03**. Changing seed is an application/data change.
 - **Acceptance criteria:** Git has only synthetic data **or** seed is documented as private-only and not on a public remote.
 - **Risks:** Demo screens empty; users must re-import CSV.
-- **Status:** `blocked`
+- **Status:** `done` (A2, 2026-11-06). `scripts/seed.ts` is synthetic and refuses to run on a DB with transactions unless `--force`. Personal values removed from app code (pages, AI route, budget defaults).
 
 ---
 
@@ -104,7 +104,7 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 - **Dependencies:** **SEC-D04**. Requires regression of `next build` (today build already fails without `data/finance.db`).
 - **Acceptance criteria:** Advisory for `next` closed or accepted with written exception; build documented.
 - **Risks:** Config key `serverExternalPackages` vs Next 14 experimental key.
-- **Status:** `blocked`
+- **Status:** `partial` (A2, 2026-11-06). Next `14.2.35` (last 14.x; closes the middleware authorization bypass GHSA-f82v-jwr5-mffw). `npm audit --omit=dev` still reports `next` (critical) and its bundled `postcss` (high): those advisories only close on Next 15/16 — separate task after Phase A. `zod` 4, `ws`, `form-data`, `nanoid` fixed.
 
 ---
 

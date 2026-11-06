@@ -4,13 +4,15 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 
+// Business pages (LUMEU, Condomínio, Trade) are hidden until they come back in scope (UX-D02).
+const SHOW_BUSINESSES = false
+
 const NAV = [
   {href:'/',label:'Dashboard',icon:'⬡',color:'#c8f97e'},
   {href:'/rui',label:'Rui',icon:'◉',color:'#7eb8f9'},
   {href:'/ana',label:'Ana',icon:'◉',color:'#f97ec8'},
   {href:'/conjunta',label:'Conta Conjunta',icon:'◈',color:'#f9c67e'},
   {href:'/investimentos',label:'Investimentos',icon:'◈',color:'#6ef9a8'},
-  {href:'/ai-advisor',label:'AI Advisor',icon:'◎',color:'#a07ef9'},
   {href:'/settings',label:'Definições',icon:'⊙',color:'#7a7a8c'},
 ]
 
@@ -22,6 +24,7 @@ export default function Sidebar() {
   const [newName, setNewName] = useState('')
 
   useEffect(() => {
+    if (!SHOW_BUSINESSES) return
     fetch('/api/business')
       .then(res => res.json())
       .then(data => {
@@ -75,7 +78,7 @@ export default function Sidebar() {
         })}
       </nav>
       {/* Negócios collapsible section */}
-      <div style={{marginTop:'12px',borderTop:'1px solid var(--bd)',paddingTop:'12px'}}>
+      {SHOW_BUSINESSES && <div style={{marginTop:'12px',borderTop:'1px solid var(--bd)',paddingTop:'12px'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
           <h3 style={{fontSize:'14px',fontWeight:600,color:'var(--t)',margin:0}}>Negócios</h3>
           <button onClick={() => setAddOpen(!addOpen)} style={{background:'none',border:'1px solid var(--bd)',borderRadius:'var(--rs)',color:'var(--t)',fontSize:'12px',padding:'4px 8px',cursor:'pointer'}}>
@@ -124,7 +127,7 @@ export default function Sidebar() {
             </div>
           </div>
         )}
-      </div>
+      </div>}
       <div style={{padding:'16px 20px',borderTop:'1px solid var(--bd)',fontSize:'11px',color:'var(--m)'}}>
         <div style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:'3px'}}>
           <div style={{width:'6px',height:'6px',borderRadius:'50%',background:'var(--green)'}}/>

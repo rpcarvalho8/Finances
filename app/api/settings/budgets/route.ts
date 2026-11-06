@@ -11,5 +11,5 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   const r=await db.execute(`SELECT extra FROM api_keys WHERE platform='__budgets__'`)
   if(r.rows.length>0&&r.rows[0].extra) return NextResponse.json(JSON.parse(r.rows[0].extra as string))
-  return NextResponse.json({rui_income:'1159.30',ana_income:'301.18',joint_income:'650.00',rui_conj:'350.00',ana_conj:'300.00'})
+  return NextResponse.json({rui_income:'',ana_income:'',joint_income:'',rui_conj:'',ana_conj:''})
 }
