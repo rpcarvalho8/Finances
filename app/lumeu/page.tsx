@@ -78,7 +78,7 @@ export default function LumeuPage() {
               </div>
             </div>
           )}
-          {loading?<div style={{color:'var(--m)',fontSize:'12px'}}>A carregar...</div>:expenses.length===0?<div style={{color:'var(--m)',fontSize:'12px',textAlign:'center',padding:'24px'}}>Sem despesas. Clica em "+ Adicionar".</div>:(
+          {loading?<div style={{color:'var(--m)',fontSize:'12px'}}>A carregar...</div>:expenses.length===0?<div style={{color:'var(--m)',fontSize:'12px',textAlign:'center',padding:'24px'}}>Sem despesas. Clica em &ldquo;+ Adicionar&rdquo;.</div>:(
             expenses.sort((a,b)=>b.date?.localeCompare(a.date)).map((e:any)=>(
               <div key={e.id} style={{display:'flex',alignItems:'flex-start',gap:'12px',padding:'10px 0',borderBottom:'1px solid var(--bd)'}}>
                 <div style={{fontFamily:'var(--fm)',fontSize:'11px',color:'var(--m)',minWidth:'46px',paddingTop:'2px'}}>{e.date?.slice(5).replace('-','/')}</div>

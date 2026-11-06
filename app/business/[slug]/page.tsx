@@ -23,7 +23,7 @@ export default function BusinessPage({ params }: { params: { slug: string } }) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Negócio não encontrado</h1>
-        <p className="text-gray-600">O negócio com o slug "{slug}" não existe.</p>
+        <p className="text-gray-600">O negócio com o slug &ldquo;{slug}&rdquo; não existe.</p>
       </div>
     );
   }

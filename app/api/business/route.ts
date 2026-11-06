@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+export const dynamic = 'force-dynamic'
+
+
 export async function GET() {
   const result = await db.execute(`SELECT id, name, slug FROM businesses ORDER BY name`)
   return NextResponse.json(result.rows)

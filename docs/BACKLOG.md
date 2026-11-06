@@ -146,7 +146,7 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 - **Dependencies:** **REL-D01**, DB-D01.
 - **Acceptance criteria:** Empty DB file created with canonical tables; no DELETE of user data.
 - **Risks:** Low if it only CREATE IF NOT EXISTS.
-- **Status:** `blocked` (code change)
+- **Status:** `done` (A1, 2026-11-06). `scripts/init-db.ts` calls `initDB()` only; creates the `data/` directory if missing; covered by `tests/db.test.ts`.
 
 ---
 
@@ -216,7 +216,7 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 - **Dependencies:** None for adding scripts; useful after DB file bootstrap so `next build` can collect page data.
 - **Acceptance criteria:** CI (when it exists) runs them; `next build` does not require a pre-existing DB **or** docs explain the bootstrap order.
 - **Risks:** `createClient` at import time currently **fails `next build`** if `./data/finance.db` is missing.
-- **Status:** `open` (can be scheduled post-approval; touching `package.json` is not Phase 0)
+- **Status:** `done` (A1, 2026-11-06). `lint`, `typecheck`, `test` (Vitest), `build`, `check`; CI in `.github/workflows/ci.yml`. Auth tests come with A3.
 
 ---
 
@@ -227,7 +227,7 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 - **Dependencies:** Human approval (application change).
 - **Acceptance criteria:** `next build` succeeds on a clean clone without `data/finance.db`.
 - **Risks:** Subtle connection lifecycle bugs.
-- **Status:** `blocked`
+- **Status:** `done` (A1, 2026-11-06). `lib/db.ts` connects on first query; `next build` passes on a clean clone without `data/finance.db`.
 
 ---
 
