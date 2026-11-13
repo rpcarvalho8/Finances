@@ -35,7 +35,8 @@ describe('lib/db', () => {
   })
 
   it('initDB creates the canonical tables, including missing parent directories', async () => {
-    const { db, initDB } = await import('@/lib/db')
+    const { db } = await import('@/lib/db')
+    const { initDB } = await import('@/lib/migrate')
     await initDB()
     expect(fs.existsSync(dbPath)).toBe(true)
     const { rows } = await db.execute(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`)
@@ -46,7 +47,8 @@ describe('lib/db', () => {
   })
 
   it('initDB is non-destructive when run again on a database with data', async () => {
-    const { db, initDB } = await import('@/lib/db')
+    const { db } = await import('@/lib/db')
+    const { initDB } = await import('@/lib/migrate')
     await initDB()
     await db.execute({
       sql: `INSERT INTO transactions (date, description, amount, type, owner) VALUES (?, ?, ?, ?, ?)`,

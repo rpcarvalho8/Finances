@@ -1,17 +1,17 @@
 /**
- * Non-destructive database bootstrap.
- *
- * Creates the canonical tables from `lib/db.ts` (`CREATE TABLE IF NOT EXISTS`)
- * and never deletes or overwrites rows. Safe to run against a database that
- * already holds data. Use `npm run db:seed` only for demo data: it DELETES rows.
+ * Non-destructive database setup: applies pending migrations from
+ * `migrations/` (backing up an existing database first). Never deletes rows.
+ * Use `npm run db:seed` only for synthetic demo data.
  */
-import { closeDb, initDB } from '../lib/db'
+import { closeDb } from '../lib/db'
+import { migrate } from '../lib/migrate'
 
-initDB()
-  .then(() => {
+migrate({ log: (m) => console.log(m) })
+  .then(({ applied }) => {
+    console.log(applied.length ? `✅ BD atualizada (${applied.length} migração/ões)` : '✅ BD já estava atualizada')
     closeDb()
   })
   .catch((err) => {
-    console.error('db:init failed:', err instanceof Error ? err.message : err)
+    console.error('db:init falhou:', err instanceof Error ? err.message : err)
     process.exit(1)
   })

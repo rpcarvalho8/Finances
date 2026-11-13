@@ -55,7 +55,8 @@ describe('parseBudgets', () => {
 
 describe('db:backup', () => {
   it('writes a consistent copy that contains the data', async () => {
-    const { db, initDB } = await import('@/lib/db')
+    const { db } = await import('@/lib/db')
+    const { initDB } = await import('@/lib/migrate')
     const { backupDb } = await import('@/scripts/backup-db')
     await initDB()
     await db.execute({
@@ -74,7 +75,8 @@ describe('db:backup', () => {
 
 describe('db:purge-secrets', () => {
   it('clears stored keys and bank tokens but keeps budgets and transactions', async () => {
-    const { db, initDB } = await import('@/lib/db')
+    const { db } = await import('@/lib/db')
+    const { initDB } = await import('@/lib/migrate')
     const { purgeSecrets } = await import('@/scripts/purge-secrets')
     await initDB()
     await db.execute(`INSERT INTO api_keys (platform, api_key, api_secret) VALUES ('broker-x', 'k', 's')`)
