@@ -93,6 +93,7 @@ Format: ID, question, context, options, recommendation (non-binding), status.
 - **Question:** Stay on ad-hoc `CREATE IF NOT EXISTS` or adopt a migrator (Drizzle, Prisma, raw SQL in `migrations/`)?
 - **Recommendation:** `migrations/*.sql` applied by a small `scripts/migrate.ts` — fewer new ORMs. Decision can wait until first schema change after freeze.
 - **Status:** **DECIDED** (2026-11-13, implementado na A4a conforme a proposta aprovada na Tarefa 0) — `migrations/NNNN_nome.up.sql` + `.down.sql` opcional, aplicados por `lib/migrate.ts` (transação por versão, checksum, backup antes de migrar/reverter). Sem ORM.
+- **Nota A4b (2026-11-13):** `0003_ledger` cria tabelas novas por agregado em vez de alterar as antigas (DB-D01: não há dados reais a migrar). As tabelas antigas ficam na BD sem uso e serão removidas numa migração própria, com backup e reversão.
 
 ---
 

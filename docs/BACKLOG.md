@@ -125,7 +125,7 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 - **Dependencies:** AUTH-001, AUTH-D02, users/households model (not Phase 0).
 - **Acceptance criteria:** Member A cannot delete member B’s personal transactions if policy forbids it.
 - **Risks:** Breaking dashboard that currently shows everyone.
-- **Status:** `partial` (A3). AUTH-D02: membros do agregado veem tudo do agregado, por isso basta ser membro. O isolamento por agregado nas queries (household_id em vez de `owner`) entra na A4b.
+- **Status:** `done` (A4b, 2026-11-13). AUTH-D02: membros do agregado veem tudo do agregado. Todas as queries de dados filtram por `household_id` da sessão (nunca do frontend); acesso por id a dados de outro agregado devolve 404. Triggers na BD recusam movimentos cuja conta é de outro agregado. Testes: `tests/ledger.test.ts`.
 
 ---
 
@@ -237,6 +237,15 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 - **Dependencies:** A1, DB-D01, DB-D02.
 - **Acceptance criteria:** `db:init`/`db:migrate` apply pending versions in one transaction each; backup before changing an existing DB; `db:rollback -- --yes` reverts the last reversible version (backup first); baseline is irreversible; edited migrations are detected.
 - **Status:** `done` (2026-11-13). Tests: `tests/migrate.test.ts`. Next: A3 (login, sessions, per-handler authorization), then A4b (typed accounts/movements in cents, owner → household IDs).
+
+---
+
+## A4b — Typed accounts and movements in cents, scoped by household
+
+- **Objective:** Replace the `owner`-string tables with household-scoped ledger tables; money as integer cents + currency.
+- **Dependencies:** A3, A4a, DB-D01 (no real data to migrate).
+- **Acceptance criteria:** migration `0003_ledger` (reversible) creates `ledger_accounts`, `ledger_movements` (amount_cents INTEGER + currency, typed `kind`), `ledger_categories`, `household_goals`, `household_settings`; `investments.household_id`; every data route filters by the session's household; cross-household id access returns 404; amounts parsed to cents without floats.
+- **Status:** `done` (2026-11-13). Tests: `tests/ledger.test.ts`, `tests/migrate.test.ts`. Import, LUMEU and business endpoints return 410 until phase B. Legacy tables (`transactions`, `accounts`, `categories`, `goals`, `lumeu_expenses`, `api_keys`, …) stay in the DB unused; they will be dropped in a later migration with backup. Manual investments keep REAL euros in the legacy table until B4 (INV-001). Person pages are still `/rui`, `/ana`, `/conjunta` and work when the users' short names (slugs) are `rui` and `ana`.
 
 ---
 

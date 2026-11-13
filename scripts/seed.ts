@@ -5,61 +5,43 @@
  * household data here: real data enters only by importing files kept in
  * `private-data/` (ignored by git).
  *
- * This script is DESTRUCTIVE: it deletes and re-inserts accounts, categories,
- * investments, goals, transactions and business expenses. If the database
- * already holds transactions it refuses to run unless you pass `--force`.
- * For a non-destructive setup use `npm run db:init`.
+ * Order: `npm run db:migrate` → `npm run user -- add …` (creates the household,
+ * its default categories and accounts) → `npm run db:seed`.
+ *
+ * Synthetic owners: 'a' = first member, 'b' = second member (rows skipped if
+ * there is only one), 'conjunta' = joint account.
+ *
+ * DESTRUCTIVE for the household it seeds: it deletes its movements, goals and
+ * manual investments and re-inserts the synthetic ones. If the household already
+ * has movements it refuses to run unless you pass `--force`.
  */
-import { closeDb, db } from '../lib/db'
+import { closeDb, getDb } from '../lib/db'
 import { initDB } from '../lib/migrate'
+import { parseAmountToCents } from '../lib/money'
 
-type Txn = [date: string, description: string, amount: number, type: string, owner: string, category: string]
+export type SeedOwner = 'a' | 'b' | 'conjunta'
+type Txn = [date: string, description: string, amount: number, kind: string, owner: SeedOwner, category: string]
 
-export const CATEGORIES: Array<[name: string, icon: string, color: string, type: string, owner: string, budgetPct: number, isBusiness: number]> = [
-  ['Receita', '💵', '#6ef9a8', 'income', 'all', 0, 0],
-  ['Habitação', '🏠', '#7eb8f9', 'expense', 'all', 35, 0],
-  ['Alimentação', '🛒', '#c8f97e', 'expense', 'all', 20, 0],
-  ['Lazer', '🎭', '#a07ef9', 'expense', 'all', 8, 0],
-  ['Investimentos', '📈', '#6ef9a8', 'expense', 'all', 0, 0],
-  ['Poupança', '💰', '#5ef0d8', 'expense', 'all', 0, 0],
-  ['Transportes', '🚗', '#f9c67e', 'expense', 'all', 10, 0],
-  ['Necessidades Básicas', '📱', '#f9f97e', 'expense', 'rui', 50, 0],
-  ['Liberdade Financeira', '📈', '#6ef9a8', 'expense', 'rui', 13, 0],
-  ['Despesas Carro', '🚗', '#f9c67e', 'expense', 'rui', 10, 0],
-  ['Fundo de Emergência', '🛡️', '#f97ec8', 'expense', 'rui', 10, 0],
-  ['Despesas Educação', '📚', '#f9f97e', 'expense', 'rui', 5, 0],
-  ['Saúde', '❤️', '#f97ec8', 'expense', 'all', 0, 0],
-  ['Compras', '🛍️', '#f96e6e', 'expense', 'all', 0, 0],
-  ['Família', '👨‍👩‍👦', '#ff9fb2', 'expense', 'all', 0, 0],
-  ['Transferências', '↔️', '#888', 'transfer', 'all', 0, 0],
-  ['Utilidades', '💡', '#f9c67e', 'expense', 'conjunta', 12, 0],
-  ['LUMEU', '🏢', '#ff9f43', 'expense', 'rui', 0, 1],
-  ['Outros', '📦', '#666', 'expense', 'all', 0, 0],
-]
-
-/** Three synthetic months of activity per owner, generated deterministically. */
+/** Three synthetic months of activity per owner, generated deterministically. Amounts in euros (converted to cents on insert). */
 export function syntheticTransactions(): Txn[] {
   const out: Txn[] = []
   for (const m of ['01', '02', '03']) {
     const d = (day: string) => `2026-${m}-${day}`
-    // Personal account A
     out.push(
-      [d('01'), 'TRANSFERENCIA ENTRADA EXEMPLO', 1000.0, 'income', 'rui', 'Receita'],
-      [d('02'), 'TRF PARA POUPANCA EXEMPLO', -100.0, 'savings', 'rui', 'Poupança'],
-      [d('05'), 'TRF PARA CORRETORA EXEMPLO', -50.0, 'investment', 'rui', 'Investimentos'],
-      [d('08'), 'SUPERMERCADO EXEMPLO A', -45.3, 'expense', 'rui', 'Alimentação'],
-      [d('12'), 'COMBUSTIVEL EXEMPLO', -40.0, 'expense', 'rui', 'Transportes'],
-      [d('15'), 'RESTAURANTE EXEMPLO', -22.5, 'expense', 'rui', 'Lazer'],
-      [d('20'), 'SUBSCRICAO STREAMING EXEMPLO', -9.99, 'expense', 'rui', 'Necessidades Básicas'],
+      [d('01'), 'TRANSFERENCIA ENTRADA EXEMPLO', 1000.0, 'income', 'a', 'Receita'],
+      [d('02'), 'TRF PARA POUPANCA EXEMPLO', -100.0, 'savings', 'a', 'Poupança'],
+      [d('05'), 'TRF PARA CORRETORA EXEMPLO', -50.0, 'investment', 'a', 'Investimentos'],
+      [d('08'), 'SUPERMERCADO EXEMPLO A', -45.3, 'expense', 'a', 'Alimentação'],
+      [d('12'), 'COMBUSTIVEL EXEMPLO', -40.0, 'expense', 'a', 'Transportes'],
+      [d('15'), 'RESTAURANTE EXEMPLO', -22.5, 'expense', 'a', 'Lazer'],
+      [d('20'), 'SUBSCRICAO STREAMING EXEMPLO', -9.99, 'expense', 'a', 'Necessidades Básicas'],
     )
-    // Personal account B
     out.push(
-      [d('01'), 'TRANSFERENCIA ENTRADA EXEMPLO', 800.0, 'income', 'ana', 'Receita'],
-      [d('06'), 'SUPERMERCADO EXEMPLO B', -38.2, 'expense', 'ana', 'Alimentação'],
-      [d('14'), 'FARMACIA EXEMPLO', -12.4, 'expense', 'ana', 'Saúde'],
-      [d('22'), 'LOJA ROUPA EXEMPLO', -35.0, 'expense', 'ana', 'Compras'],
+      [d('01'), 'TRANSFERENCIA ENTRADA EXEMPLO', 800.0, 'income', 'b', 'Receita'],
+      [d('06'), 'SUPERMERCADO EXEMPLO B', -38.2, 'expense', 'b', 'Alimentação'],
+      [d('14'), 'FARMACIA EXEMPLO', -12.4, 'expense', 'b', 'Saúde'],
+      [d('22'), 'LOJA ROUPA EXEMPLO', -35.0, 'expense', 'b', 'Compras'],
     )
-    // Joint account
     out.push(
       [d('01'), 'CONTRIBUICAO MENSAL A', 500.0, 'income', 'conjunta', 'Receita'],
       [d('01'), 'CONTRIBUICAO MENSAL B', 400.0, 'income', 'conjunta', 'Receita'],
@@ -73,66 +55,125 @@ export function syntheticTransactions(): Txn[] {
   return out
 }
 
-async function seed() {
-  await initDB()
+export class SeedRefused extends Error {}
 
-  const force = process.argv.includes('--force')
-  const { rows } = await db.execute(`SELECT COUNT(*) AS n FROM transactions`)
-  if (Number(rows[0].n) > 0 && !force) {
-    console.error(
-      `A BD já tem ${rows[0].n} movimentos. O seed APAGA dados. ` +
+/** Seeds one household. Returns the number of movements inserted. */
+export async function seedHousehold(householdId: number, opts: { force?: boolean } = {}): Promise<number> {
+  const db = getDb()
+  const existing = await db.execute({ sql: `SELECT COUNT(*) AS n FROM ledger_movements WHERE household_id = ?`, args: [householdId] })
+  if (Number(existing.rows[0].n) > 0 && !opts.force) {
+    throw new SeedRefused(
+      `O agregado já tem ${existing.rows[0].n} movimentos. O seed APAGA dados. ` +
         'Faz primeiro `npm run db:backup` e depois `npm run db:seed -- --force` se tens a certeza.',
     )
+  }
+  const members = await db.execute({
+    sql: `SELECT user_id FROM household_members WHERE household_id = ? ORDER BY user_id LIMIT 2`,
+    args: [householdId],
+  })
+  const ownerUser: Record<SeedOwner, number | null | undefined> = {
+    a: members.rows[0] ? Number(members.rows[0].user_id) : undefined,
+    b: members.rows[1] ? Number(members.rows[1].user_id) : undefined,
+    conjunta: null,
+  }
+
+  const tx = await db.transaction('write')
+  try {
+    const account = async (owner: SeedOwner): Promise<number | null> => {
+      const uid = ownerUser[owner]
+      if (uid === undefined) return null
+      const r = await tx.execute({
+        sql: `SELECT id FROM ledger_accounts WHERE household_id = ? AND ${uid === null ? 'owner_user_id IS NULL' : 'owner_user_id = ?'} ORDER BY is_default DESC, id LIMIT 1`,
+        args: uid === null ? [householdId] : [householdId, uid],
+      })
+      return r.rows[0] ? Number(r.rows[0].id) : null
+    }
+    const accounts: Record<SeedOwner, number | null> = { a: await account('a'), b: await account('b'), conjunta: await account('conjunta') }
+
+    await tx.execute({ sql: `DELETE FROM ledger_movements WHERE household_id = ?`, args: [householdId] })
+    await tx.execute({ sql: `DELETE FROM household_goals WHERE household_id = ?`, args: [householdId] })
+    await tx.execute({ sql: `DELETE FROM investments WHERE household_id = ?`, args: [householdId] })
+
+    let n = 0
+    for (const [date, description, amount, kind, owner, category] of syntheticTransactions()) {
+      const acc = accounts[owner]
+      if (acc === null) continue
+      const cents = parseAmountToCents(amount)
+      if (cents === null) throw new Error(`Montante inválido no seed: ${amount}`)
+      await tx.execute({
+        sql: `INSERT INTO ledger_movements (household_id, account_id, booked_on, description, amount_cents, kind, category_id, source)
+              VALUES (?, ?, ?, ?, ?, ?, (SELECT id FROM ledger_categories WHERE household_id = ? AND name = ?), 'seed')`,
+        args: [householdId, acc, date, description, cents, kind, householdId, category],
+      })
+      n++
+    }
+
+    const goals: Array<[string, string, number, number, SeedOwner, string]> = [
+      ['Fundo de Emergência', '🛡️', 300000, 75000, 'a', '#f97ec8'],
+      ['Fundo de Emergência', '🛡️', 300000, 50000, 'b', '#6ef9a8'],
+      ['Férias', '✈️', 150000, 30000, 'conjunta', '#a07ef9'],
+    ]
+    for (const [name, icon, target, saved, owner, color] of goals) {
+      if (ownerUser[owner] === undefined) continue
+      await tx.execute({
+        sql: `INSERT INTO household_goals (household_id, owner_user_id, name, icon, color, target_cents, saved_cents) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        args: [householdId, ownerUser[owner] ?? null, name, icon, color, target, saved],
+      })
+    }
+
+    // Legacy manual-investments table (REAL euros) until B4.
+    const slug = async (owner: SeedOwner) => {
+      const uid = ownerUser[owner]
+      if (uid === undefined) return null
+      if (uid === null) return 'conjunta'
+      const r = await tx.execute({ sql: `SELECT slug FROM users WHERE id = ?`, args: [uid] })
+      return String(r.rows[0].slug)
+    }
+    const inv: Array<[string, string, string, number, number, SeedOwner]> = [
+      ['Corretora Exemplo', 'etf', 'ETF Exemplo', 300, 310, 'a'],
+      ['PPR Exemplo', 'ppr', 'PPR Exemplo', 500, 505, 'a'],
+      ['Poupança Exemplo', 'savings', 'Conta Poupança Exemplo', 1000, 1000, 'b'],
+    ]
+    for (const [platform, type, name, invested, current, owner] of inv) {
+      const s = await slug(owner)
+      if (s === null) continue
+      await tx.execute({
+        sql: `INSERT INTO investments (household_id, platform, type, name, invested, current_value, owner) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        args: [householdId, platform, type, name, invested, current, s],
+      })
+    }
+    await tx.commit()
+    return n
+  } catch (err) {
+    await tx.rollback().catch(() => {})
+    throw err
+  } finally {
+    tx.close()
+  }
+}
+
+async function main() {
+  await initDB()
+  const hh = await getDb().execute(`SELECT id FROM households ORDER BY id LIMIT 1`)
+  if (!hh.rows.length) {
+    console.error('Não há agregado. Cria primeiro um utilizador: `npm run user -- add "Nome" email@exemplo`')
     process.exit(1)
   }
-
   console.log('🌱 A inserir dados sintéticos...')
-
-  await db.execute(`DELETE FROM accounts`)
-  await db.execute(`INSERT INTO accounts (name,owner,bank,type,balance,color) VALUES
-    ('Conta Pessoal (exemplo)','rui','activobank','checking',0,'#7eb8f9'),
-    ('Conta Conjunta (exemplo)','conjunta','abanca','checking',0,'#f9c67e'),
-    ('Conta Pessoal (exemplo)','ana','activobank','checking',0,'#f97ec8')`)
-
-  await db.execute(`DELETE FROM categories`)
-  for (const c of CATEGORIES) {
-    await db.execute({
-      sql: `INSERT INTO categories (name,icon,color,type,owner,budget_pct,is_business) VALUES (?,?,?,?,?,?,?)`,
-      args: c,
-    })
+  try {
+    const n = await seedHousehold(Number(hh.rows[0].id), { force: process.argv.includes('--force') })
+    console.log(`✅ Seed sintético completo (${n} movimentos).`)
+  } catch (err) {
+    if (err instanceof SeedRefused) {
+      console.error(err.message)
+      process.exit(1)
+    }
+    throw err
   }
-
-  await db.execute(`DELETE FROM investments`)
-  await db.execute(`INSERT INTO investments (platform,type,name,invested,current_value,owner) VALUES
-    ('Corretora Exemplo','etf','ETF Exemplo',300.00,310.00,'rui'),
-    ('PPR Exemplo','ppr','PPR Exemplo',500.00,505.00,'rui'),
-    ('Poupança Exemplo','savings','Conta Poupança Exemplo',1000.00,1000.00,'ana')`)
-
-  await db.execute(`DELETE FROM goals`)
-  await db.execute(`INSERT INTO goals (name,icon,target,saved,owner,color) VALUES
-    ('Fundo de Emergência','🛡️',3000,750,'rui','#f97ec8'),
-    ('Fundo de Emergência','🛡️',3000,500,'ana','#6ef9a8'),
-    ('Férias','✈️',1500,300,'familia','#a07ef9')`)
-
-  await db.execute(`DELETE FROM transactions`)
-  for (const [date, description, amount, type, owner, category] of syntheticTransactions()) {
-    await db.execute({
-      sql: `INSERT INTO transactions (date,description,amount,type,owner,category_id,account_id)
-            SELECT ?,?,?,?,?,c.id,a.id FROM categories c, accounts a WHERE c.name=? AND a.owner=? LIMIT 1`,
-      args: [date, description, amount, type, owner, category, owner],
-    })
-  }
-
-  await db.execute(`DELETE FROM lumeu_expenses`)
-  await db.execute(`INSERT INTO lumeu_expenses (date,description,amount,category,vendor) VALUES
-    ('2026-01-15','ALOJAMENTO WEB EXEMPLO',15.00,'infra','Fornecedor Exemplo'),
-    ('2026-02-15','ALOJAMENTO WEB EXEMPLO',15.00,'infra','Fornecedor Exemplo')`)
-
-  console.log('✅ Seed sintético completo!')
 }
 
 if (require.main === module) {
-  seed()
+  main()
     .then(() => closeDb())
     .catch((e) => {
       console.error(e)

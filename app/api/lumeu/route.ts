@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { withAuth } from '@/lib/auth/guard'
+// Disabled in A4b (2026-11-13): business expenses are hidden (Q5) and the legacy table is not household-scoped.
+// Previous implementation: git show 2d4c6f4:app/api/lumeu/route.ts
+import { disabledFeature } from '@/lib/disabled'
 
 export const dynamic = 'force-dynamic'
 
-export const GET = withAuth(async () => {
-  const r=await db.execute(`SELECT * FROM lumeu_expenses ORDER BY date DESC`)
-  return NextResponse.json(r.rows)
-})
-export const POST = withAuth(async (req: NextRequest) => {
-  const b=await req.json()
-  const r=await db.execute({sql:`INSERT INTO lumeu_expenses (date,description,amount,category,vendor,notes) VALUES (?,?,?,?,?,?)`,args:[b.date,b.description,b.amount,b.category||'infra',b.vendor||null,b.notes||null]})
-  return NextResponse.json({id:r.lastInsertRowid,success:true})
-})
+export function GET() {
+  return disabledFeature('despesas de negócio')
+}
+export function POST() {
+  return disabledFeature('despesas de negócio')
+}

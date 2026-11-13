@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { withAuth } from '@/lib/auth/guard'
-export const DELETE = withAuth(async (_:NextRequest,{params}:{params:{id:string}}) => {
-  await db.execute({sql:`DELETE FROM lumeu_expenses WHERE id=?`,args:[params.id]})
-  return NextResponse.json({success:true})
-})
+// Disabled in A4b (2026-11-13). Previous implementation: git show 2d4c6f4:"app/api/lumeu/[id]/route.ts"
+import { disabledFeature } from '@/lib/disabled'
+
+export const dynamic = 'force-dynamic'
+
+export function DELETE() {
+  return disabledFeature('despesas de negócio')
+}

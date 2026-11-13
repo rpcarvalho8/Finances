@@ -165,11 +165,7 @@ describe('every data API requires a session', () => {
     ['goals/[id]', ['PUT', 'DELETE'], { params: { id: '1' } }],
     ['investments', ['GET', 'POST'], {}],
     ['investments/[id]', ['PUT', 'DELETE'], { params: { id: '1' } }],
-    ['lumeu', ['GET', 'POST'], {}],
-    ['lumeu/[id]', ['DELETE'], { params: { id: '1' } }],
-    ['business', ['GET', 'POST'], {}],
     ['settings/budgets', ['GET', 'POST'], {}],
-    ['import', ['POST'], {}],
     ['auth/me', ['GET'], {}],
   ]
   for (const [route, methods, ctx] of routes) {
@@ -201,7 +197,7 @@ describe('every data API requires a session', () => {
       const rel = path.relative(root, path.dirname(file)).split(path.sep).join('/')
       if (allowed.has(rel)) continue
       const src = fs.readFileSync(file, 'utf8')
-      const ok = src.includes('withAuth(') || src.includes('disabledFeature(')
+      const ok = /withAuth(<[^>]*>)?\(/.test(src) || src.includes('disabledFeature(')
       expect(ok, `app/api/${rel}/route.ts must use withAuth`).toBe(true)
       expect(/export async function (GET|POST|PUT|DELETE|PATCH)/.test(src), `app/api/${rel}: raw handler export`).toBe(false)
     }
