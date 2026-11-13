@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { withAuth } from '@/lib/auth/guard'
 
 export const dynamic = 'force-dynamic'
 
 
-export async function GET() {
+export const GET = withAuth(async () => {
   const result = await db.execute(`SELECT id, name, slug FROM businesses ORDER BY name`)
   return NextResponse.json(result.rows)
-}
+})
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest) => {
   try {
     const { name } = await req.json()
     if (!name || typeof name !== 'string') {
@@ -39,4 +40,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 }
     )
   }
-}
+})

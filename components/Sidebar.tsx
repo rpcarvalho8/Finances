@@ -16,7 +16,7 @@ const NAV = [
   {href:'/settings',label:'Definições',icon:'⊙',color:'#7a7a8c'},
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ me }: { me?: { name: string } | null }) {
   const path = usePathname()
   const [businesses, setBusinesses] = useState<Array<{id:string; name:string; slug:string}>>([])
   const [loading, setLoading] = useState(true)
@@ -134,6 +134,15 @@ export default function Sidebar() {
           A correr localmente
         </div>
         <div>Ubuntu · Dev Mode</div>
+        {me && (
+          <div style={{marginTop:'10px',display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px'}}>
+            <span style={{color:'var(--t2)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{me.name}</span>
+            <button
+              onClick={async () => { await fetch('/api/auth/logout', { method: 'POST' }); window.location.href = '/login' }}
+              style={{background:'none',border:'1px solid var(--bd)',borderRadius:'var(--rs)',color:'var(--t2)',fontSize:'11px',padding:'3px 8px',cursor:'pointer'}}
+            >Sair</button>
+          </div>
+        )}
       </div>
     </aside>
   )

@@ -64,7 +64,7 @@ Format: ID, question, context, options, recommendation (non-binding), status.
   2. One household PIN.
   3. Per-user passwords using `users` table.
 - **Recommendation:** (3) aligned with target; (1) is unacceptable if Open Banking tunnels remain.
-- **Status:** **DECIDED em princípio** (2026-11-06, Rui) — App corre no PC do Rui, acessível na rede de casa. Opção 3: password por pessoa + sessão no servidor (proposta em `ANALISE_CLAUDE.md`, secção B). Autorização verificada em cada handler, não só no middleware.
+- **Status:** **DECIDED e implementado** (A3, 2026-11-13) — Password por pessoa (scrypt, mín. 12 caracteres), sessão no servidor (tabela `sessions`, só o SHA-256 do token), cookie `HttpOnly; SameSite=Lax` (`Secure` com `COOKIE_SECURE=true`), 30 dias deslizantes, limite de 5 falhas/15 min, verificação de `Origin` em escritas. Utilizadores criados só por `npm run user` no PC. App no PC do Rui, rede de casa.
 - **Blocks:** AUTH-001 and all public-network deploys
 
 ---

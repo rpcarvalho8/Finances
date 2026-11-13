@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { withAuth } from '@/lib/auth/guard'
 
 function categorize(desc: string, amount: number): { category: string; type: string } {
   const d = desc.toUpperCase()
@@ -16,7 +17,7 @@ function categorize(desc: string, amount: number): { category: string; type: str
   return { category: 'Outros', type: 'expense' }
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest) => {
   const formData = await req.formData()
   const file = formData.get('file') as File
   const owner = formData.get('owner') as string
@@ -49,4 +50,4 @@ export async function POST(req: NextRequest) {
     } catch (e) { errors.push(`Linha ${i}: ${e}`) }
   }
   return NextResponse.json({ imported, skipped, errors: errors.slice(0, 5) })
-}
+})

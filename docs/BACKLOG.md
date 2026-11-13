@@ -115,7 +115,7 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 - **Dependencies:** **AUTH-D01**, preferably SEC-003.
 - **Acceptance criteria:** Unauthenticated GET `/api/backup` and POST `/api/transactions` return 401; household members can log in; passwords not in setup script defaults.
 - **Risks:** Locks out current zero-auth local workflow; need a bootstrap user.
-- **Status:** `blocked`
+- **Status:** `done` (A3, 2026-11-13). Todas as rotas de dados usam `withAuth` (401 sem sessão, 403 cross-site); páginas redirecionam para `/login`; teste estático impede rotas novas sem proteção.
 
 ---
 
@@ -125,7 +125,7 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 - **Dependencies:** AUTH-001, AUTH-D02, users/households model (not Phase 0).
 - **Acceptance criteria:** Member A cannot delete member B’s personal transactions if policy forbids it.
 - **Risks:** Breaking dashboard that currently shows everyone.
-- **Status:** `blocked`
+- **Status:** `partial` (A3). AUTH-D02: membros do agregado veem tudo do agregado, por isso basta ser membro. O isolamento por agregado nas queries (household_id em vez de `owner`) entra na A4b.
 
 ---
 
