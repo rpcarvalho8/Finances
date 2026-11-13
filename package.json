@@ -13,7 +13,9 @@
     "db:init": "tsx scripts/init-db.ts",
     "db:seed": "tsx scripts/seed.ts",
     "db:backup": "tsx scripts/backup-db.ts",
-    "db:purge-secrets": "tsx scripts/purge-secrets.ts"
+    "db:purge-secrets": "tsx scripts/purge-secrets.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:rollback": "tsx scripts/migrate.ts down"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

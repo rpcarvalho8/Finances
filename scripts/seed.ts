@@ -10,7 +10,8 @@
  * already holds transactions it refuses to run unless you pass `--force`.
  * For a non-destructive setup use `npm run db:init`.
  */
-import { closeDb, db, initDB } from '../lib/db'
+import { closeDb, db } from '../lib/db'
+import { initDB } from '../lib/migrate'
 
 type Txn = [date: string, description: string, amount: number, type: string, owner: string, category: string]
 

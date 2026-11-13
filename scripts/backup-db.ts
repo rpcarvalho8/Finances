@@ -4,22 +4,10 @@
  * Writes a consistent copy with SQLite `VACUUM INTO` to `backups/` (ignored by
  * git). Run on the machine that holds the database: `npm run db:backup`.
  */
-import fs from 'fs'
-import path from 'path'
-import { closeDb, db } from '../lib/db'
+import { backupDb, backupFileName } from '../lib/backup'
+import { closeDb } from '../lib/db'
 
-export function backupFileName(now: Date): string {
-  const stamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19)
-  return `finance-${stamp}.db`
-}
-
-export async function backupDb(dir = 'backups', now = new Date()): Promise<string> {
-  fs.mkdirSync(dir, { recursive: true })
-  const target = path.resolve(dir, backupFileName(now))
-  if (fs.existsSync(target)) throw new Error(`Backup já existe: ${target}`)
-  await db.execute({ sql: 'VACUUM INTO ?', args: [target] })
-  return target
-}
+export { backupDb, backupFileName }
 
 if (require.main === module) {
   backupDb()

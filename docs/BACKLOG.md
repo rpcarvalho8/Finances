@@ -135,7 +135,7 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 - **Dependencies:** **DB-D01**, SEC-002.
 - **Acceptance criteria:** PROJECT docs + (later) single `DATABASE_URL`; `test-init.js` either deleted or clearly marked dead.
 - **Risks:** Confusion if `db:init` still points at missing file.
-- **Status:** `blocked`
+- **Status:** `done` (A4a, 2026-11-13). Esquema canónico = `migrations/` (0001 baseline = antigo `initDB()`). `test-init.js` continua morto (remoção na limpeza UX-D02).
 
 ---
 
@@ -228,6 +228,15 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 - **Acceptance criteria:** `next build` succeeds on a clean clone without `data/finance.db`.
 - **Risks:** Subtle connection lifecycle bugs.
 - **Status:** `done` (A1, 2026-11-06). `lib/db.ts` connects on first query; `next build` passes on a clean clone without `data/finance.db`.
+
+---
+
+## A4a — Versioned migrations + households/sessions
+
+- **Objective:** Migration runner with backup and rollback; tables `households`, `household_members`, `sessions` for A3.
+- **Dependencies:** A1, DB-D01, DB-D02.
+- **Acceptance criteria:** `db:init`/`db:migrate` apply pending versions in one transaction each; backup before changing an existing DB; `db:rollback -- --yes` reverts the last reversible version (backup first); baseline is irreversible; edited migrations are detected.
+- **Status:** `done` (2026-11-13). Tests: `tests/migrate.test.ts`. Next: A3 (login, sessions, per-handler authorization), then A4b (typed accounts/movements in cents, owner → household IDs).
 
 ---
 

@@ -150,7 +150,7 @@ Finance OS does **not** currently receive aggregated trading payloads from a sib
 | Unit tests (Vitest) | `npm run test` | Pass (`tests/db.test.ts`: lazy client, non-destructive `initDB`) |
 | Production build | `npm run build` | Pass **without** `data/finance.db` (lazy DB client; `force-dynamic` on DB-reading GET handlers; valid Next 14 config key) |
 | All four | `npm run check` | Lint → typecheck → test → build |
-| DB bootstrap | `npm run db:init` | Creates tables only (`CREATE TABLE IF NOT EXISTS`), never deletes rows |
+| DB bootstrap | `npm run db:init` / `db:migrate` | Applies pending `migrations/*.sql` (backup first if the DB exists), never deletes rows. `db:migrate -- status`, `db:rollback -- --yes` |
 | Demo seed | `npm run db:seed` | Still **destructive** (DELETE + INSERT). Do not run against real data. Replaced by synthetic seed in A2. |
 
 Phase 0 results (historical): no lint/test scripts; `db:init` failed (missing file); `next build` failed while collecting page data because `createClient()` ran at import.
