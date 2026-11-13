@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const r=await db.execute(`SELECT * FROM lumeu_expenses ORDER BY date DESC`)
   return NextResponse.json(r.rows)

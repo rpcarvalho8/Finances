@@ -141,14 +141,19 @@ Finance OS does **not** currently receive aggregated trading payloads from a sib
 
 ## Quality bar (scripts / tests / build)
 
-| Check | Exists? | Result in Phase 0 environment |
+**Updated 2026-11-06 (A1 = QA-001 + BUILD-001 + DB-002).** CI (`.github/workflows/ci.yml`) runs all four checks on every PR on a clean runner with no database.
+
+| Check | Command | Result |
 | --- | --- | --- |
-| Unit/e2e tests | No | N/A |
-| ESLint | No | N/A |
-| `npm run typecheck` | No | Manual `npx tsc --noEmit` used instead |
-| `npm run build` | Yes | See below |
-| `npm run db:init` | Script yes, file no | Fails: `scripts/init-db.ts` missing |
-| `npm run db:seed` | Yes | Not executed against production data in Phase 0 (would DELETE/INSERT household rows) |
+| ESLint (`next/core-web-vitals`) | `npm run lint` | Pass, 0 warnings allowed |
+| Typecheck | `npm run typecheck` | Pass (still `strict: false`) |
+| Unit tests (Vitest) | `npm run test` | Pass (`tests/db.test.ts`: lazy client, non-destructive `initDB`) |
+| Production build | `npm run build` | Pass **without** `data/finance.db` (lazy DB client; `force-dynamic` on DB-reading GET handlers; valid Next 14 config key) |
+| All four | `npm run check` | Lint → typecheck → test → build |
+| DB bootstrap | `npm run db:init` | Creates tables only (`CREATE TABLE IF NOT EXISTS`), never deletes rows |
+| Demo seed | `npm run db:seed` | Still **destructive** (DELETE + INSERT). Do not run against real data. Replaced by synthetic seed in A2. |
+
+Phase 0 results (historical): no lint/test scripts; `db:init` failed (missing file); `next build` failed while collecting page data because `createClient()` ran at import.
 
 `tsconfig.json` has `"strict": false`. Widespread `any` in pages.
 

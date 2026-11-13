@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   const body=await req.json()
   await db.execute({sql:`INSERT INTO api_keys (platform,extra) VALUES ('__budgets__',?) ON CONFLICT(platform) DO UPDATE SET extra=excluded.extra`,args:[JSON.stringify(body)]})
