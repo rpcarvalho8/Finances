@@ -1,5 +1,7 @@
 # DECISIONS
 
+> **2026-11-06:** o Rui respondeu às perguntas Q1–Q5 de `ANALISE_CLAUDE.md` e aprovou avançar com a Fase A. Também ficou decidido desligar até às fases C/D: AI Advisor, armazenamento de chaves de corretoras (`/api/settings/api-keys`) e ligação bancária (callback Enable Banking). Q6 (estrutura dos ficheiros) continua em aberto e bloqueia a B1.
+
 Open decisions that **block** implementation after Phase 0. Items stay **PENDING** until a human records an outcome here (or in a follow-up commit). SEC-D01 and SEC-D02 were decided 2026-09-20.
 
 Format: ID, question, context, options, recommendation (non-binding), status.
@@ -37,7 +39,7 @@ Format: ID, question, context, options, recommendation (non-binding), status.
 - **Context:** Salaries, employers, merchants, family names. Required for the current UI demo.
 - **Options:** Anonymize in-repo / private data pack / leave as-is because repo is private.
 - **Recommendation:** Synthetic seed in git; real import via CSV locally (not committed).
-- **Status:** **PENDING**
+- **Status:** **DECIDED** (2026-11-06, Rui) — Seed sintético no git; retirar também os valores pessoais fixos do código da app (páginas, `ai-advisor`, defaults de `budgets`). Dados reais só por importação local a partir de `private-data/` (ignorada pelo git). Executa na A2.
 - **Blocks:** SEC-005 (not to run without approval — rewrites data the UI relies on)
 
 ---
@@ -48,7 +50,7 @@ Format: ID, question, context, options, recommendation (non-binding), status.
 - **Context:** `npm audit` critical/high on `next`; vendor advisory to a patched release.
 - **Options:** Patch-level 14.2.x vs jump to last 14.2 patch vs Next 15 (would make `serverExternalPackages` valid).
 - **Recommendation:** Move to the latest patched 14.2.x first (smallest). Next 15 is a separate decision.
-- **Status:** **PENDING**
+- **Status:** **DECIDED** (2026-11-06, Rui) — Subir já para `next@14.2.35` (A2). Next 15/16 fica como tarefa própria depois da Fase A.
 - **Blocks:** SEC-006
 
 ---
@@ -62,7 +64,7 @@ Format: ID, question, context, options, recommendation (non-binding), status.
   2. One household PIN.
   3. Per-user passwords using `users` table.
 - **Recommendation:** (3) aligned with target; (1) is unacceptable if Open Banking tunnels remain.
-- **Status:** **PENDING**
+- **Status:** **DECIDED em princípio** (2026-11-06, Rui) — App corre no PC do Rui, acessível na rede de casa. Opção 3: password por pessoa + sessão no servidor (proposta em `ANALISE_CLAUDE.md`, secção B). Autorização verificada em cada handler, não só no middleware.
 - **Blocks:** AUTH-001 and all public-network deploys
 
 ---
@@ -71,7 +73,7 @@ Format: ID, question, context, options, recommendation (non-binding), status.
 
 - **Question:** Can Ana see Rui’s personal account? Can either see LUMEU?
 - **Context:** Today everyone sees everything. Goals API already mixes `familia` into personal queries.
-- **Status:** **PENDING**
+- **Status:** **DECIDED** (2026-11-06, Rui) — Rui e Ana veem as contas pessoais um do outro e a conjunta. Isolamento é por agregado (household), não por pessoa.
 - **Blocks:** AUTH-002
 
 ---
@@ -81,7 +83,7 @@ Format: ID, question, context, options, recommendation (non-binding), status.
 - **Question:** Is `lib/db.ts` `initDB()` the source of truth (INTEGER PKs, `saved`, `owner` strings) until a migrated household schema exists?
 - **Context:** `local.db` / `test-init.js` disagree; `personal_transactions` / `bank_*` tables are undeclared.
 - **Recommendation:** Yes — freeze `initDB()` as canonical; treat other schemas as dead. Then plan Users/Households migration (not Phase 0).
-- **Status:** **PENDING**
+- **Status:** **DECIDED** (2026-11-06, Rui) — Não há dados reais em `data/finance.db` que não existam nos extratos. O esquema novo é criado do zero com migrações (A4a/A4b) e os dados são reimportados; não há migração de dados antigos.
 - **Blocks:** DB-001, DB-002
 
 ---
@@ -136,7 +138,7 @@ Format: ID, question, context, options, recommendation (non-binding), status.
 - **Context:** Current Advisor does exactly that, unauthenticated. Target forbids raw DB → LLM.
 - **Options:** Disable AI until Gateway exists / allow aggregates only / allow raw descriptions with explicit consent.
 - **Recommendation:** Disable public exposure immediately (auth); then aggregates-only default.
-- **Status:** **PENDING**
+- **Status:** **DECIDED (provisório)** (2026-11-06, Rui) — AI Advisor desligado na A2 até à fase D2.
 - **Blocks:** AI-001
 
 ---
@@ -171,7 +173,7 @@ Format: ID, question, context, options, recommendation (non-binding), status.
 
 - **Question:** Delete `/investments`, `/lumeu`, `/finance` after confirming unused?
 - **Recommendation:** Yes after AUTH freeze; sidebar already uses `/investimentos` and `/business/lumeu`.
-- **Status:** **PENDING**
+- **Status:** **DECIDED** (2026-11-06, Rui) — Esconder LUMEU / Condomínio / Trade do menu na A2; voltam mais tarde. Duplicados (`/investments`, `/lumeu`, `/finance`) podem ser removidos.
 - **Blocks:** LEG-001 (non-destructive until approved)
 
 ---
@@ -189,4 +191,4 @@ Format: ID, question, context, options, recommendation (non-binding), status.
 
 - **Question:** Is this app allowed to bind beyond localhost? Current setup mentions Ubuntu desktop + `local.lt` for PSD2.
 - **Recommendation:** Localhost only until Auth + secret rotation. PSD2 redirect via a controlled HTTPS domain, not a random tunnel name in source.
-- **Status:** **PENDING**
+- **Status:** **DECIDED** (2026-11-06, Rui) — PC do Rui, rede de casa (LAN). Sem exposição à internet nem túneis. Até haver autenticação (A3), a app corre só em localhost.
