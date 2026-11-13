@@ -4,6 +4,8 @@ Evidence-based findings. **No private key material, no password values, and no f
 
 **2026-09-20 remediation (SEC-D01 option 1 + SEC-D02):** the Enable Banking PEM and `local.db` were deleted from HEAD in a forward commit; `.gitignore` now covers `*.pem`, `*.db`, and `local.db`. Init no longer falls back to the burned application UUID or a `loca.lt` redirect. **Git history still contains both secrets at commit `170427a`.** Treat the old key as burned. **A human must rotate** the Enable Banking application key/keypair in the provider console (SEC-004). History rewrite / force-push was explicitly **not** done.
 
+**2026-11-06 remediation (A2):** AI Advisor (A07), API-key storage (A04), Open Banking init/callback (A05/A06/A12/A14), `/api/backup` (A11) and `/api/investments/sync` return **410** (`lib/disabled.ts`). `npm run db:purge-secrets -- --yes` clears keys/tokens already stored. Seed is synthetic (A08); setup script has no default passwords (A09); Next 14.2.35 (A10, partial); `.claude/settings.local.json` untracked (A16). Authentication (A03) and IDOR (A15) remain open until A3.
+
 Severity: **Critical** / **High** / **Medium** / **Low** / **Info**.
 
 ---

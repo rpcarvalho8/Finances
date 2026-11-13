@@ -1,11 +1,8 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+// Disabled in A2 (2026-11-06). Previous implementation: git show 4880d7f:app/api/investments/sync/route.ts
+import { disabledFeature } from '@/lib/disabled'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
-  try {
-    const r=await db.execute(`SELECT platform, CASE WHEN api_key IS NOT NULL AND api_key!='' THEN 'ok' ELSE 'inactive' END as status FROM api_keys`)
-    const s:Record<string,string>={}; r.rows.forEach((row:any)=>{s[row.platform]=row.status}); return NextResponse.json(s)
-  } catch { return NextResponse.json({}) }
+export function GET() {
+  return disabledFeature('sincronização de investimentos')
 }

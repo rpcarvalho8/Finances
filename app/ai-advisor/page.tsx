@@ -37,7 +37,7 @@ export default function AIAdvisorPage() {
 
   return (
     <div className="fade-up">
-      <PageHeader title="AI" italic="Advisor" sub="Powered by Claude · Contexto dos teus dados reais" accent="var(--purple)"/>
+      <PageHeader title="AI" italic="Advisor" sub="Desligado até à fase D2 (IA só leitura, com dados minimizados)" accent="var(--purple)"/>
       <div style={{display:'grid',gridTemplateColumns:'1fr 260px',gap:'16px',alignItems:'start'}}>
         <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
           <Card style={{minHeight:'420px',display:'flex',flexDirection:'column',gap:'16px'}}>

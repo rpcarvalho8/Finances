@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { StatCard, Card, SectionTitle, CategoryBar, TxnRow, GoalBar, PageHeader, AddTransactionForm, ImportCSV, fmt } from '@/components/UI'
+import { useBudgets } from '@/lib/useBudgets'
 
-const INCOME = 1159.30
 const CATS = [
   {name:'Necessidades Básicas',icon:'🏠',color:'#7eb8f9',pct:.50},
   {name:'Liberdade Financeira',icon:'📈',color:'#6ef9a8',pct:.13},
@@ -25,6 +25,7 @@ export default function RuiPage() {
   const [goals,setGoals]=useState<any[]>([])
   const [month,setMonth]=useState('all')
   const [loading,setLoading]=useState(true)
+  const { rui_income: INCOME } = useBudgets()
 
   const load = useCallback(async()=>{
     setLoading(true)
@@ -80,19 +81,14 @@ export default function RuiPage() {
         <StatCard label="Investido" value={fmt(invested)} sub="XTB+IBKR+Bybit+PPR" color="var(--accent)" pin="var(--accent)"/>
         <StatCard label="LUMEU" value={fmt(lumeu)} sub="negócio" color="var(--lumeu)" pin="var(--lumeu)"/>
       </div>
-      <div style={{background:'var(--s2)',border:'1px solid var(--bd)',borderRadius:'var(--rs)',padding:'10px 16px',marginBottom:'18px',display:'flex',gap:'20px',flexWrap:'wrap',fontSize:'12px'}}>
-        {[{l:'Salário bruto',v:'1.509,30 €',c:'var(--rui)'},{l:'→ Conta conjunta',v:'350,00 €',c:'var(--amber)'},{l:'→ Conta pessoal',v:'1.159,30 €',c:'var(--green)'},{l:'Saldo atual',v:'156,24 €',c:'var(--t2)'}].map(item=>(
-          <div key={item.l}><div style={{fontSize:'10px',color:'var(--m)',textTransform:'uppercase',letterSpacing:'.06em'}}>{item.l}</div><div style={{fontFamily:'var(--fm)',fontWeight:500,color:item.c}}>{item.v}</div></div>
-        ))}
-      </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 290px',gap:'16px',alignItems:'start'}}>
         <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
           <Card>
-            <SectionTitle right={`base: ${fmt(INCOME)}/mês`}>Orçamento</SectionTitle>
+            <SectionTitle right={INCOME>0?`base: ${fmt(INCOME)}/mês`:'base: definir em Definições'}>Orçamento</SectionTitle>
             {loading?<div style={{color:'var(--m)',fontSize:'12px'}}>A carregar...</div>:(
               <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
                 {CATS.filter(c=>catTotals[c.name]||c.pct>0).map(c=>(
-                  <CategoryBar key={c.name} name={c.name} icon={c.icon} spent={catTotals[c.name]||0} budget={c.pct>0?INCOME*c.pct:0} color={c.color} percent={Math.round((catTotals[c.name]||0)/INCOME*100)}/>
+                  <CategoryBar key={c.name} name={c.name} icon={c.icon} spent={catTotals[c.name]||0} budget={c.pct>0?INCOME*c.pct:0} color={c.color} percent={Math.round((catTotals[c.name]||0)/Math.max(INCOME,1)*100)}/>
                 ))}
               </div>
             )}

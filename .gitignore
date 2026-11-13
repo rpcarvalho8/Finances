@@ -12,3 +12,7 @@ uploads/
 *.log
 .DS_Store
 *.tsbuildinfo
+# Real household files (bank statements, exports). Never commit.
+private-data/
+# Local agent configuration
+.claude/settings.local.json
