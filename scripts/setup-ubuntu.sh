@@ -57,6 +57,7 @@ echo ""
 echo -e "${YELLOW}[4/4]${NC} A inicializar base de dados (sem apagar dados existentes)..."
 npm run db:init
 echo -e "  Para dados de demonstração sintéticos: ${BLUE}npm run db:seed${NC}"
+echo -e "  Cria os utilizadores: ${BLUE}npm run user -- add \"Nome\" email@exemplo.pt${NC}"
 echo -e "${GREEN}✓ Base de dados pronta${NC}"
 
 echo ""

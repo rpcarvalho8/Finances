@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { db } from '@/lib/db'
+import { requireUser } from '@/lib/auth/server'
 import Link from 'next/link'
 
 function fmt(v: number): string {
@@ -18,6 +19,7 @@ async function getData() {
 }
 
 export default async function DashboardPage() {
+  await requireUser()
   const { txns, investments, goals, month } = await getData()
   const income = txns.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0)
   const expenses = txns.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0)

@@ -65,17 +65,7 @@ Missing but referenced: **`/api/finances`**.
 
 ## Auth & identity (real)
 
-**There is no login, session, cookie, JWT-for-users, or middleware.**
-
-Evidence:
-
-- `users` table is created in `lib/db.ts` (`password_hash`, `role`) but **never inserted or queried**.
-- `.env.example` defines `AUTH_SECRET`, `RUI_PASSWORD`, `ANA_PASSWORD`. **No TypeScript file reads these names** (repo-wide grep).
-- Ownership is a **free-text column** `owner` with values used in UI/API/seed: `'rui' | 'ana' | 'conjunta' | 'familia' | 'all'`.
-- Dashboard people cards are hardcoded (`href:'/rui'`, `'/ana'`, `'/conjunta'`).
-- Layout description: `'Gestão financeira familiar — Rui & Ana'`.
-
-Anyone who can reach the process can read/write all household and business data.
+**Updated 2026-11-13 (A3).** Login by email + password at `/login`. Server-side sessions (`sessions` table stores only the SHA-256 of the token; cookie `fos_session`, HttpOnly, SameSite=Lax, 30-day sliding expiry). Every data route handler is wrapped in `withAuth` (`lib/auth/guard.ts`): 401 without a valid session, 403 for cross-site writes. `middleware.ts` only redirects pages to `/login`; it is not the security boundary. Users are created locally: `npm run user -- add "<Nome>" <email>`; the first user is the household owner. Data is still keyed by `owner` strings until A4b moves it to household IDs.
 
 ## Data entry (real)
 
