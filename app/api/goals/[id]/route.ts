@@ -1,12 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
 import { withAuth } from '@/lib/auth/guard'
-export const PUT = withAuth(async (req: NextRequest,{params}:{params:{id:string}}) => {
-  const b=await req.json()
-  await db.execute({sql:`UPDATE goals SET saved=COALESCE(?,saved),target=COALESCE(?,target),name=COALESCE(?,name) WHERE id=?`,args:[b.saved??null,b.target??null,b.name??null,params.id]})
-  return NextResponse.json({success:true})
+import { badRequest, notFound, optionalString, readJsonObject } from '@/lib/api'
+import { archiveGoal, parseId, updateGoal } from '@/lib/ledger'
+import { parseAmountToCents } from '@/lib/money'
+
+type Ctx = { params: { id: string } }
+
+function cents(v: unknown, min: number): number | undefined | null {
+  if (v === undefined || v === null) return undefined
+  const c = parseAmountToCents(v)
+  return c === null || c < min ? null : c
+}
+
+export const PUT = withAuth<Ctx>(async (req: NextRequest, { params }, user) => {
+  const id = parseId(params.id)
+  if (id === null) return notFound()
+  const b = await readJsonObject(req)
+  if (!b) return badRequest('Pedido inválido')
+  const name = optionalString(b.name, 100)
+  const savedCents = cents(b.saved, 0)
+  const targetCents = cents(b.target, 1)
+  if (name === null || savedCents === null || targetCents === null) return badRequest('Valores inválidos')
+  const ok = await updateGoal(user.householdId, id, { name, savedCents, targetCents })
+  return ok ? NextResponse.json({ success: true }) : notFound()
 })
-export const DELETE = withAuth(async (_:NextRequest,{params}:{params:{id:string}}) => {
-  await db.execute({sql:`UPDATE goals SET active=0 WHERE id=?`,args:[params.id]})
-  return NextResponse.json({success:true})
+
+export const DELETE = withAuth<Ctx>(async (_req: NextRequest, { params }, user) => {
+  const id = parseId(params.id)
+  if (id === null) return notFound()
+  return (await archiveGoal(user.householdId, id)) ? NextResponse.json({ success: true }) : notFound()
 })

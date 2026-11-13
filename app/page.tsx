@@ -1,30 +1,46 @@
 export const dynamic = 'force-dynamic'
 
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 import { requireUser } from '@/lib/auth/server'
+import { listGoals, listMovements, listViews } from '@/lib/ledger'
+import { centsToEuros, parseAmountToCents, sumCents } from '@/lib/money'
 import Link from 'next/link'
 
 function fmt(v: number): string {
   return Math.abs(v).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'
 }
 
-async function getData() {
+const VIEW_COLORS = ['#7eb8f9', '#f97ec8', '#a07ef9', '#6ef9a8']
+
+async function getData(householdId: number) {
   const month = new Date().toISOString().slice(0, 7)
-  const [txns, investments, goals] = await Promise.all([
-    db.execute({ sql: `SELECT t.*,c.name as cat,c.icon FROM transactions t LEFT JOIN categories c ON t.category_id=c.id WHERE t.date LIKE ? ORDER BY t.date DESC`, args: [month+'%'] }),
-    db.execute(`SELECT * FROM investments`),
-    db.execute(`SELECT * FROM goals WHERE active=1 ORDER BY owner,name`),
+  const [txns, investments, goals, views] = await Promise.all([
+    listMovements(householdId, { month, limit: 1000 }),
+    getDb().execute({ sql: `SELECT id, platform, type, invested, current_value FROM investments WHERE household_id = ?`, args: [householdId] }),
+    listGoals(householdId, null),
+    listViews(householdId),
   ])
-  return { txns: txns.rows as any[], investments: investments.rows as any[], goals: goals.rows as any[], month }
+  return { txns, investments: investments.rows as any[], goals, views, month }
+}
+
+/** Income/expense totals in cents for one view key (or all when key is null). Transfers are excluded. */
+function totals(txns: Awaited<ReturnType<typeof listMovements>>, key: string | null) {
+  const rows = txns.filter((t) => (key === null || t.owner === key) && t.type !== 'transfer')
+  return {
+    inc: sumCents(rows.filter((t) => t.amount_cents > 0).map((t) => t.amount_cents)),
+    out: sumCents(rows.filter((t) => t.amount_cents < 0).map((t) => -t.amount_cents)),
+  }
 }
 
 export default async function DashboardPage() {
-  await requireUser()
-  const { txns, investments, goals, month } = await getData()
-  const income = txns.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0)
-  const expenses = txns.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0)
-  const totalInv = investments.reduce((s,i)=>s+(i.invested||0),0)
-  const totalCur = investments.reduce((s,i)=>s+(i.current_value||0),0)
+  const user = await requireUser()
+  const { txns, investments, goals, views, month } = await getData(user.householdId)
+  const all = totals(txns, null)
+  const income = centsToEuros(all.inc)
+  const expenses = centsToEuros(all.out)
+  const invCents = (k: string) => sumCents(investments.map((i) => parseAmountToCents(Number(i[k] ?? 0)) ?? 0))
+  const totalInv = centsToEuros(invCents('invested'))
+  const totalCur = centsToEuros(invCents('current_value'))
   const pl = totalCur - totalInv
   const monthLabel = new Date(month+'-01').toLocaleDateString('pt-PT',{month:'long',year:'numeric'})
 
@@ -36,11 +52,10 @@ export default async function DashboardPage() {
     </div>
   )
 
-  const people = [
-    {href:'/rui',label:'Rui',color:'#7eb8f9',inc:txns.filter(t=>t.owner==='rui'&&t.amount>0).reduce((s,t)=>s+t.amount,0),out:txns.filter(t=>t.owner==='rui'&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0)},
-    {href:'/ana',label:'Ana',color:'#f97ec8',inc:txns.filter(t=>t.owner==='ana'&&t.amount>0).reduce((s,t)=>s+t.amount,0),out:txns.filter(t=>t.owner==='ana'&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0)},
-    {href:'/conjunta',label:'Conta Conjunta',color:'#f9c67e',inc:txns.filter(t=>t.owner==='conjunta'&&t.amount>0).reduce((s,t)=>s+t.amount,0),out:txns.filter(t=>t.owner==='conjunta'&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0)},
-  ]
+  const people = views.map((v, i) => {
+    const t = totals(txns, v.key)
+    return { href: `/${v.key}`, label: v.name, color: v.key === 'conjunta' ? '#f9c67e' : VIEW_COLORS[i % VIEW_COLORS.length], inc: centsToEuros(t.inc), out: centsToEuros(t.out) }
+  })
 
   return (
     <div style={{animation:'fadeUp .4s ease'}}>
@@ -52,7 +67,7 @@ export default async function DashboardPage() {
       </div>
 
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'12px',marginBottom:'24px'}}>
-        {sc('Receita familiar',fmt(income),'Rui + Ana','#6ef9a8')}
+        {sc('Receita familiar',fmt(income),'todas as contas','#6ef9a8')}
         {sc('Despesas',fmt(expenses),'total saídas','#f96e6e')}
         {sc('Portfolio',fmt(totalCur),`P&L: ${pl>=0?'+':''}${fmt(pl)}`,'#c8f97e')}
         {sc('Saldo',fmt(income-expenses),`${Math.round((income-expenses)/Math.max(income,1)*100)}% da receita`,'#5ef0d8')}
@@ -104,7 +119,7 @@ export default async function DashboardPage() {
                   <div style={{width:'28px',height:'28px',borderRadius:'6px',background:'#1a1a22',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',flexShrink:0}}>{t.icon||(t.amount>0?'💵':'💳')}</div>
                   <div style={{minWidth:0}}>
                     <div style={{fontSize:'12px',fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</div>
-                    <div style={{fontSize:'10px',color:'#606078'}}>{t.cat||'Outros'} · {t.owner}</div>
+                    <div style={{fontSize:'10px',color:'#606078'}}>{t.category_name||'Outros'} · {t.owner}</div>
                   </div>
                 </div>
                 <div style={{textAlign:'right',flexShrink:0}}>
