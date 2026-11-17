@@ -1,0 +1,11 @@
+DROP INDEX IF EXISTS idx_investments_household;
+ALTER TABLE investments DROP COLUMN household_id;
+DROP TABLE IF EXISTS household_settings;
+DROP TABLE IF EXISTS household_goals;
+DROP TRIGGER IF EXISTS ledger_movements_same_household_upd;
+DROP TRIGGER IF EXISTS ledger_movements_same_household_ins;
+DROP TABLE IF EXISTS ledger_movements;
+DROP TABLE IF EXISTS ledger_accounts;
+DROP TABLE IF EXISTS ledger_categories;
+DROP INDEX IF EXISTS idx_users_slug;
+ALTER TABLE users DROP COLUMN slug;

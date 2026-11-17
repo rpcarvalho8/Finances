@@ -158,7 +158,11 @@ export function AddTransactionForm({owner,cats,onAdd}:{owner:string;cats?:string
   )
 }
 
+/** Import is off until B1 (new per-bank parsers with preview and dedupe). */
+export const IMPORT_ENABLED = false
+
 export function ImportCSV({owner}:{owner:string}) {
+  if (!IMPORT_ENABLED) return null
   async function handleFile(e:React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if(!file) return
     const fd = new FormData(); fd.append('file',file); fd.append('owner',owner)

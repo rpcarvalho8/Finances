@@ -28,6 +28,12 @@ describe('disabled endpoints return 410 and never touch the database', () => {
     ['@/app/api/sync/bank/init/route', 'POST'],
     ['@/app/api/sync/bank/callback/route', 'GET'],
     ['@/app/api/investments/sync/route', 'GET'],
+    ['@/app/api/lumeu/route', 'GET'],
+    ['@/app/api/lumeu/route', 'POST'],
+    ['@/app/api/lumeu/[id]/route', 'DELETE'],
+    ['@/app/api/business/route', 'GET'],
+    ['@/app/api/business/route', 'POST'],
+    ['@/app/api/import/route', 'POST'],
   ]
   for (const [mod, method] of cases) {
     it(`${method} ${mod.replace('@/app', '').replace('/route', '')}`, async () => {
@@ -101,16 +107,17 @@ describe('db:purge-secrets', () => {
 })
 
 describe('synthetic seed', () => {
-  it('only uses invented descriptions and categories that exist', async () => {
-    const { CATEGORIES, syntheticTransactions } = await import('@/scripts/seed')
-    const cats = new Set(CATEGORIES.map((c) => c[0]))
+  it('only uses invented descriptions and default categories', async () => {
+    const { syntheticTransactions } = await import('@/scripts/seed')
+    const { DEFAULT_CATEGORIES } = await import('@/lib/household')
+    const cats = new Set(DEFAULT_CATEGORIES.map((c) => c[0]))
     const txns = syntheticTransactions()
     expect(txns.length).toBeGreaterThan(0)
     for (const [date, description, amount, , owner, category] of txns) {
       expect(date).toMatch(/^2026-\d{2}-\d{2}$/)
       expect(description).toMatch(/EXEMPLO|CONTRIBUICAO MENSAL/)
       expect(Number.isFinite(amount)).toBe(true)
-      expect(['rui', 'ana', 'conjunta']).toContain(owner)
+      expect(['a', 'b', 'conjunta']).toContain(owner)
       expect(cats.has(category)).toBe(true)
     }
   })

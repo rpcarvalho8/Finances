@@ -10,6 +10,7 @@ export type SessionUser = {
   userId: number
   name: string
   email: string
+  slug: string
   householdId: number
   role: 'owner' | 'member'
   sessionId: string
@@ -50,7 +51,7 @@ export async function validateSession(token: string | undefined | null): Promise
   await ensureForeignKeys()
   const id = hashToken(token)
   const { rows } = await getDb().execute({
-    sql: `SELECT s.id, s.expires_at, s.last_seen_at, u.id AS user_id, u.name, u.email, m.household_id, m.role
+    sql: `SELECT s.id, s.expires_at, s.last_seen_at, u.id AS user_id, u.name, u.email, u.slug, m.household_id, m.role
           FROM sessions s
           JOIN users u ON u.id = s.user_id
           JOIN household_members m ON m.user_id = u.id
@@ -76,6 +77,7 @@ export async function validateSession(token: string | undefined | null): Promise
     userId: Number(r.user_id),
     name: String(r.name),
     email: String(r.email),
+    slug: String(r.slug ?? ''),
     householdId: Number(r.household_id),
     role: String(r.role) === 'owner' ? 'owner' : 'member',
     sessionId: id,

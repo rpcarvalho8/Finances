@@ -65,9 +65,11 @@ Missing but referenced: **`/api/finances`**.
 
 ## Auth & identity (real)
 
-**Updated 2026-11-13 (A3).** Login by email + password at `/login`. Server-side sessions (`sessions` table stores only the SHA-256 of the token; cookie `fos_session`, HttpOnly, SameSite=Lax, 30-day sliding expiry). Every data route handler is wrapped in `withAuth` (`lib/auth/guard.ts`): 401 without a valid session, 403 for cross-site writes. `middleware.ts` only redirects pages to `/login`; it is not the security boundary. Users are created locally: `npm run user -- add "<Nome>" <email>`; the first user is the household owner. Data is still keyed by `owner` strings until A4b moves it to household IDs.
+**Updated 2026-11-13 (A3).** Login by email + password at `/login`. Server-side sessions (`sessions` table stores only the SHA-256 of the token; cookie `fos_session`, HttpOnly, SameSite=Lax, 30-day sliding expiry). Every data route handler is wrapped in `withAuth` (`lib/auth/guard.ts`): 401 without a valid session, 403 for cross-site writes. `middleware.ts` only redirects pages to `/login`; it is not the security boundary. Users are created locally: `npm run user -- add "<Nome>" <email>`; the first user is the household owner. **Updated 2026-11-13 (A4b).** Data is scoped by household: every query filters by the session's `householdId` (`lib/ledger.ts`). Each user has a short name (`slug`, from the name) used as the view key in the UI (`?owner=<slug>` or `conjunta`). Money in the new tables is integer cents + currency (`lib/money.ts`).
 
 ## Data entry (real)
+
+**Updated 2026-11-13 (A4b).** Manual entry writes to `ledger_movements` via the view's default account (created per member and for the joint account when users are added). CSV import is **off** (410) until B1. Setup order: `npm run db:migrate` → `npm run user -- add "<Nome>" <email>` (each person) → optional `npm run db:seed` (synthetic demo).
 
 1. **Seed** (`scripts/seed.ts`): wipes/reinserts accounts, categories, investments, goals, and many 2026-01..03 transactions for `rui` and `conjunta` (no Ana personal txns in the seed loop). Contains salary/employer/merchant strings that look like real household data.
 2. **Manual forms** (`AddTransactionForm` in `components/UI.tsx`).

@@ -43,12 +43,14 @@ describe('migrations in the repo', () => {
     expect(ms[0].down).toBeNull()
     expect(ms[1].name).toBe('households_sessions')
     expect(ms[1].down).not.toBeNull()
+    expect(ms[2].name).toBe('ledger')
+    expect(ms[2].down).not.toBeNull()
   })
 
   it('create households, members and sessions on a fresh database without a backup', async () => {
     const { migrate } = await import('@/lib/migrate')
     const r = await migrate({ backupDir })
-    expect(r.applied).toEqual([1, 2])
+    expect(r.applied).toEqual([1, 2, 3])
     expect(r.backup).toBeNull()
     const t = await tables()
     for (const name of ['households', 'household_members', 'sessions', 'users', 'transactions', 'schema_migrations']) {
@@ -67,22 +69,29 @@ describe('migrations in the repo', () => {
     await db.execute(`INSERT INTO transactions (date, description, amount, type, owner) VALUES ('2026-01-01','SYNTHETIC',-1.5,'expense','x')`)
 
     const r = await migrate({ backupDir })
-    expect(r.applied).toEqual([1, 2])
+    expect(r.applied).toEqual([1, 2, 3])
     expect(r.backup && fs.existsSync(r.backup)).toBe(true)
     const { rows } = await db.execute(`SELECT COUNT(*) AS n FROM transactions`)
     expect(Number(rows[0].n)).toBe(1)
   })
 
-  it('rollback reverts 0002 with a backup and refuses the baseline', async () => {
+  it('rollback reverts 0003 then 0002 with backups and refuses the baseline', async () => {
     const { migrate, rollback } = await import('@/lib/migrate')
     await migrate({ backupDir })
+    const r3 = await rollback({ backupDir })
+    expect(r3.reverted).toBe(3)
+    expect(r3.backup && fs.existsSync(r3.backup)).toBe(true)
+    for (const t of ['ledger_accounts', 'ledger_movements', 'ledger_categories', 'household_goals', 'household_settings']) {
+      expect(await tables()).not.toContain(t)
+    }
+    expect(await tables()).toContain('sessions')
     const r = await rollback({ backupDir })
     expect(r.reverted).toBe(2)
     expect(r.backup && fs.existsSync(r.backup)).toBe(true)
     expect(await tables()).not.toContain('sessions')
     expect(await tables()).toContain('transactions')
     await expect(rollback({ backupDir })).rejects.toThrow(/irreversível/)
-    expect((await migrate({ backupDir })).applied).toEqual([2])
+    expect((await migrate({ backupDir })).applied).toEqual([2, 3])
   })
 })
 

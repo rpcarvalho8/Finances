@@ -1,16 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
 import { withAuth } from '@/lib/auth/guard'
+import { badRequest, readJsonObject } from '@/lib/api'
+import { getSetting, setSetting } from '@/lib/ledger'
 
 export const dynamic = 'force-dynamic'
 
-export const POST = withAuth(async (req: NextRequest) => {
-  const body=await req.json()
-  await db.execute({sql:`INSERT INTO api_keys (platform,extra) VALUES ('__budgets__',?) ON CONFLICT(platform) DO UPDATE SET extra=excluded.extra`,args:[JSON.stringify(body)]})
-  return NextResponse.json({success:true})
+const EMPTY = { rui_income: '', ana_income: '', joint_income: '', rui_conj: '', ana_conj: '' }
+
+export const POST = withAuth(async (req: NextRequest, _ctx, user) => {
+  const b = await readJsonObject(req)
+  if (!b) return badRequest('Pedido inválido')
+  // Only plain string/number values; nothing nested is stored.
+  const clean: Record<string, string> = {}
+  for (const [k, v] of Object.entries(b)) {
+    if (!/^[a-z_]{1,40}$/.test(k)) continue
+    if (typeof v === 'string' || typeof v === 'number') clean[k] = String(v).slice(0, 20)
+  }
+  await setSetting(user.householdId, 'budgets', JSON.stringify(clean))
+  return NextResponse.json({ success: true })
 })
-export const GET = withAuth(async () => {
-  const r=await db.execute(`SELECT extra FROM api_keys WHERE platform='__budgets__'`)
-  if(r.rows.length>0&&r.rows[0].extra) return NextResponse.json(JSON.parse(r.rows[0].extra as string))
-  return NextResponse.json({rui_income:'',ana_income:'',joint_income:'',rui_conj:'',ana_conj:''})
+
+export const GET = withAuth(async (_req: NextRequest, _ctx, user) => {
+  const raw = await getSetting(user.householdId, 'budgets')
+  if (!raw) return NextResponse.json(EMPTY)
+  try {
+    return NextResponse.json({ ...EMPTY, ...JSON.parse(raw) })
+  } catch {
+    return NextResponse.json(EMPTY)
+  }
 })
