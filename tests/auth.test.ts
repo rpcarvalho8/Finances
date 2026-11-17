@@ -167,7 +167,7 @@ describe('every data API requires a session', () => {
     ['investments/[id]', ['PUT', 'DELETE'], { params: { id: '1' } }],
     ['settings/budgets', ['GET', 'POST'], {}],
     ['import', ['GET', 'POST'], {}],
-    ['accounts', ['GET'], {}],
+    ['accounts', ['GET', 'POST'], {}],
     ['auth/me', ['GET'], {}],
   ]
   for (const [route, methods, ctx] of routes) {

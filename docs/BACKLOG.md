@@ -258,6 +258,15 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 
 ---
 
+## B1b — Meal card (Pluxee CSV)
+
+- **Objective:** Import the meal-card export into its own `meal_card` account; top-ups as in-kind income, spending as food.
+- **Dependencies:** B1a.
+- **Acceptance criteria:** title lines skipped; split descriptions rebuilt; Portuguese amounts exact; signs inferred when absent (with a warning); kinds and category set; no duplicates on re-import; accounts can be created from the UI (`POST /api/accounts`, household-scoped).
+- **Status:** `done` (2026-11-17). Code: `lib/import/pluxee.ts`, `createAccount` in `lib/ledger.ts`, `/importar`. Tests: `tests/pluxee.test.ts` (synthetic fixtures). To confirm with a real file: delimiter, quoting, date format.
+
+---
+
 ## Phase 0 closure checklist
 
 - [x] Audit evidence collected

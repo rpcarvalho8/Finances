@@ -8,7 +8,7 @@ import { getSource, IMPORT_SOURCES } from '@/lib/import/registry'
 export const dynamic = 'force-dynamic'
 
 /** Lists the formats the app can import. */
-export const GET = withAuth(async () => NextResponse.json(IMPORT_SOURCES.map((s) => ({ id: s.id, label: s.label, accept: s.accept }))))
+export const GET = withAuth(async () => NextResponse.json(IMPORT_SOURCES.map((s) => ({ id: s.id, label: s.label, accept: s.accept, accountKind: s.accountKind ?? null }))))
 
 /**
  * multipart/form-data: file, source, account_id, mode=preview|commit, sha256 (commit only).

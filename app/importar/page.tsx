@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react'
 import { Card, PageHeader, SectionTitle } from '@/components/UI'
 
-type Account = { id: number; name: string; owner: string; institution: string }
-type Source = { id: string; label: string; accept: string }
+type Account = { id: number; name: string; owner: string; ownerKey: string; institution: string; kind: string }
+type Source = { id: string; label: string; accept: string; accountKind: string | null }
 type Preview = {
   account: { id: number; name: string }
   fileSha256: string
@@ -28,11 +28,41 @@ export default function ImportPage() {
   const [preview, setPreview] = useState<Preview | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const [newAcc, setNewAcc] = useState<{ name: string; kind: string; owner: string } | null>(null)
+
+  async function loadAccounts(selectId?: number) {
+    const a: Account[] = await fetch('/api/accounts').then((r) => r.json())
+    setAccounts(a)
+    if (selectId) setAccountId(String(selectId))
+    else if (a[0] && !accountId) setAccountId(String(a[0].id))
+  }
 
   useEffect(() => {
-    fetch('/api/accounts').then((r) => r.json()).then((a: Account[]) => { setAccounts(a); if (a[0]) setAccountId(String(a[0].id)) })
+    loadAccounts()
     fetch('/api/import').then((r) => r.json()).then((s: Source[]) => { setSources(s); if (s[0]) setSourceId(s[0].id) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Preselect an account of the kind the format expects (e.g. meal card for Pluxee).
+  function chooseSource(id: string) {
+    setSourceId(id)
+    setPreview(null)
+    const kind = sources.find((s) => s.id === id)?.accountKind
+    const match = kind ? accounts.find((a) => a.kind === kind) : null
+    if (match) setAccountId(String(match.id))
+    else if (kind === 'meal_card') setNewAcc({ name: 'Cartão refeição', kind: 'meal_card', owner: accounts.find((a) => a.ownerKey !== 'conjunta')?.ownerKey ?? 'conjunta' })
+  }
+
+  async function createAccount() {
+    if (!newAcc) return
+    const res = await fetch('/api/accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newAcc) })
+    const data = await res.json()
+    if (!res.ok) { setMessage({ ok: false, text: data.error ?? 'Erro' }); return }
+    setNewAcc(null)
+    await loadAccounts(data.id)
+  }
+
+  const owners = Array.from(new Map(accounts.map((a) => [a.ownerKey, a.owner])).entries())
 
   function form(mode: 'preview' | 'commit') {
     const fd = new FormData()
@@ -70,7 +100,7 @@ export default function ImportPage() {
       <Card>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '12px', alignItems: 'end' }}>
           <label style={{ fontSize: '12px', color: 'var(--m)' }}>Formato
-            <select value={sourceId} onChange={(e) => { setSourceId(e.target.value); setPreview(null) }} style={inp}>
+            <select value={sourceId} onChange={(e) => chooseSource(e.target.value)} style={inp}>
               {sources.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
           </label>
@@ -83,6 +113,32 @@ export default function ImportPage() {
             <input type="file" accept={accept} onChange={(e) => { setFile(e.target.files?.[0] ?? null); setPreview(null) }} style={inp} />
           </label>
           <button disabled={!file || busy} onClick={() => send('preview')} style={btn(false)}>Pré-visualizar</button>
+        </div>
+        <div style={{ marginTop: '10px', fontSize: '12px' }}>
+          {!newAcc ? (
+            <button onClick={() => setNewAcc({ name: '', kind: 'checking', owner: owners[0]?.[0] ?? 'conjunta' })} style={{ ...btn(false), fontWeight: 400, padding: '4px 10px', fontSize: '12px' }}>+ Nova conta</button>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto auto', gap: '8px', alignItems: 'end' }}>
+              <label style={{ color: 'var(--m)' }}>Nome<input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })} style={inp} /></label>
+              <label style={{ color: 'var(--m)' }}>Tipo
+                <select value={newAcc.kind} onChange={(e) => setNewAcc({ ...newAcc, kind: e.target.value })} style={inp}>
+                  <option value="checking">Conta à ordem</option>
+                  <option value="savings">Poupança</option>
+                  <option value="meal_card">Cartão refeição</option>
+                  <option value="term_deposit">Depósito a prazo</option>
+                  <option value="broker">Corretora</option>
+                  <option value="crypto">Cripto</option>
+                </select>
+              </label>
+              <label style={{ color: 'var(--m)' }}>De quem
+                <select value={newAcc.owner} onChange={(e) => setNewAcc({ ...newAcc, owner: e.target.value })} style={inp}>
+                  {owners.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
+                </select>
+              </label>
+              <button onClick={createAccount} disabled={!newAcc.name.trim()} style={btn(true)}>Criar</button>
+              <button onClick={() => setNewAcc(null)} style={btn(false)}>Cancelar</button>
+            </div>
+          )}
         </div>
         {message && <div style={{ marginTop: '12px', fontSize: '13px', color: message.ok ? 'var(--green)' : '#f96e6e' }}>{message.text}</div>}
       </Card>
