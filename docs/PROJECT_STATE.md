@@ -69,7 +69,7 @@ Missing but referenced: **`/api/finances`**.
 
 ## Data entry (real)
 
-**Updated 2026-11-13 (A4b).** Manual entry writes to `ledger_movements` via the view's default account (created per member and for the joint account when users are added). CSV import is **off** (410) until B1. Setup order: `npm run db:migrate` → `npm run user -- add "<Nome>" <email>` (each person) → optional `npm run db:seed` (synthetic demo).
+**Updated 2026-11-13 (A4b).** Manual entry writes to `ledger_movements` via the view's default account (created per member and for the joint account when users are added). **Updated 2026-11-17 (B1a).** Import is back at `/importar` with preview, dedupe and an error report; formats so far: ABANCA CSV (see `docs/IMPORT_FORMATS.md`). Setup order: `npm run db:migrate` → `npm run user -- add "<Nome>" <email>` (each person) → optional `npm run db:seed` (synthetic demo).
 
 1. **Seed** (`scripts/seed.ts`): wipes/reinserts accounts, categories, investments, goals, and many 2026-01..03 transactions for `rui` and `conjunta` (no Ana personal txns in the seed loop). Contains salary/employer/merchant strings that look like real household data.
 2. **Manual forms** (`AddTransactionForm` in `components/UI.tsx`).

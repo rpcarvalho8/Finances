@@ -111,7 +111,7 @@ Format: ID, question, context, options, recommendation (non-binding), status.
 - **Question:** Enable Banking (partially wired, committed key) vs GoCardless/Nordigen (unused lib) vs neither (CSV only)?
 - **Context:** Two incomplete stacks; placeholder ASPSP ids; loca.lt redirect.
 - **Recommendation:** Pick **one**. Do not keep both libs. If Enable Banking key is burned, budget a new application registration.
-- **Status:** **PENDING**
+- **Status:** **DIRECTION DECIDED** (2026-11-17, Rui) — Rui quer ligação direta a ABANCA, ActivoBank, Revolut, Pluxee, XTB e OKX, com conectores plugáveis. Análise em `docs/CONECTORES.md`: bancos via Enable Banking (gratuito para uso pessoal; GoCardless fechou registos), OKX com chave só de leitura, Pluxee e XTB por ficheiro (sem API). Ordem escolhida: **ficheiros primeiro (fase B), depois ligações (fase D: D0 cofre de segredos + interface de conectores, D1 Enable Banking, D2 OKX, D3 XTB por ficheiro)**. A confirmação final de usar o Enable Banking fica para o início da D1.
 - **Blocks:** OB-001
 
 ---

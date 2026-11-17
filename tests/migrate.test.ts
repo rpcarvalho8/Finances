@@ -45,12 +45,14 @@ describe('migrations in the repo', () => {
     expect(ms[1].down).not.toBeNull()
     expect(ms[2].name).toBe('ledger')
     expect(ms[2].down).not.toBeNull()
+    expect(ms[3].name).toBe('imports')
+    expect(ms[3].down).not.toBeNull()
   })
 
   it('create households, members and sessions on a fresh database without a backup', async () => {
     const { migrate } = await import('@/lib/migrate')
     const r = await migrate({ backupDir })
-    expect(r.applied).toEqual([1, 2, 3])
+    expect(r.applied).toEqual([1, 2, 3, 4])
     expect(r.backup).toBeNull()
     const t = await tables()
     for (const name of ['households', 'household_members', 'sessions', 'users', 'transactions', 'schema_migrations']) {
@@ -69,15 +71,18 @@ describe('migrations in the repo', () => {
     await db.execute(`INSERT INTO transactions (date, description, amount, type, owner) VALUES ('2026-01-01','SYNTHETIC',-1.5,'expense','x')`)
 
     const r = await migrate({ backupDir })
-    expect(r.applied).toEqual([1, 2, 3])
+    expect(r.applied).toEqual([1, 2, 3, 4])
     expect(r.backup && fs.existsSync(r.backup)).toBe(true)
     const { rows } = await db.execute(`SELECT COUNT(*) AS n FROM transactions`)
     expect(Number(rows[0].n)).toBe(1)
   })
 
-  it('rollback reverts 0003 then 0002 with backups and refuses the baseline', async () => {
+  it('rollback reverts 0004, 0003 then 0002 with backups and refuses the baseline', async () => {
     const { migrate, rollback } = await import('@/lib/migrate')
     await migrate({ backupDir })
+    const r4 = await rollback({ backupDir })
+    expect(r4.reverted).toBe(4)
+    expect(await tables()).not.toContain('import_batches')
     const r3 = await rollback({ backupDir })
     expect(r3.reverted).toBe(3)
     expect(r3.backup && fs.existsSync(r3.backup)).toBe(true)
@@ -91,7 +96,7 @@ describe('migrations in the repo', () => {
     expect(await tables()).not.toContain('sessions')
     expect(await tables()).toContain('transactions')
     await expect(rollback({ backupDir })).rejects.toThrow(/irreversível/)
-    expect((await migrate({ backupDir })).applied).toEqual([2, 3])
+    expect((await migrate({ backupDir })).applied).toEqual([2, 3, 4])
   })
 })
 

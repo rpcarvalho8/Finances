@@ -249,3 +249,22 @@ export class LedgerError extends Error {
 export function parseId(raw: string): number | null {
   return /^\d{1,12}$/.test(raw) ? Number(raw) : null
 }
+
+// ── Accounts ─────────────────────────────────────────────────────────────
+
+export async function listAccounts(householdId: number): Promise<Array<{ id: number; name: string; institution: string; kind: string; owner: string; currency: string }>> {
+  const { rows } = await getDb().execute({
+    sql: `SELECT a.id, a.name, a.institution, a.kind, a.currency, a.owner_user_id, u.name AS owner_name
+          FROM ledger_accounts a LEFT JOIN users u ON u.id = a.owner_user_id
+          WHERE a.household_id = ? AND a.archived_at IS NULL ORDER BY a.owner_user_id IS NOT NULL, a.owner_user_id, a.id`,
+    args: [householdId],
+  })
+  return rows.map((r) => ({
+    id: Number(r.id),
+    name: String(r.name),
+    institution: String(r.institution),
+    kind: String(r.kind),
+    currency: String(r.currency),
+    owner: r.owner_user_id === null ? 'Conjunta' : String(r.owner_name),
+  }))
+}

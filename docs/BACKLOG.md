@@ -249,6 +249,15 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 
 ---
 
+## B1a — Import pipeline + ABANCA CSV
+
+- **Objective:** One import path for every bank file (and later live connectors): parse → preview → dedupe → commit with a report.
+- **Dependencies:** A4b.
+- **Acceptance criteria:** preview writes nothing; commit re-parses server-side and inserts only new rows; same or overlapping file never duplicates; bad lines are reported, not fatal; amounts exact in cents with the sign kept; account must belong to the session's household.
+- **Status:** `done` (2026-11-17). Migration `0004_imports` (reversible): `import_batches`, `ledger_movements.import_batch_id`. Code: `lib/import/`, `app/api/import`, `app/api/accounts`, `/importar`. Tests: `tests/import.test.ts` with synthetic fixtures. Format notes: `docs/IMPORT_FORMATS.md`. Not yet: undo an import (needs backup + delete by batch), categories (B3), internal transfers (B2).
+
+---
+
 ## Phase 0 closure checklist
 
 - [x] Audit evidence collected
