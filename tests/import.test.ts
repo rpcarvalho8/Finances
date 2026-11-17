@@ -67,6 +67,15 @@ describe('CSV helpers', () => {
     expect(parseNoisyAmountToCents('abc €')).toBeNull()
     expect(parseNoisyAmountToCents('')).toBeNull()
   })
+  it('detects UTF-8 strictly and decodes Windows-1252 without ICU', async () => {
+    const { decodeText, isValidUtf8 } = await import('@/lib/import/csv')
+    expect(isValidUtf8(new TextEncoder().encode('Operação € ç'))).toBe(true)
+    expect(isValidUtf8(new Uint8Array([0x4f, 0x70, 0xe7, 0xe3, 0x6f]))).toBe(false) // cp1252 "Opçã o"
+    expect(isValidUtf8(new Uint8Array([0xc0, 0x80]))).toBe(false) // overlong
+    expect(isValidUtf8(new Uint8Array([0xe2, 0x82]))).toBe(false) // truncated
+    expect(decodeText(new Uint8Array([0x80, 0x20, 0xe7, 0xe3, 0x93, 0x94]))).toBe('€ çã“”')
+    expect(decodeText(new Uint8Array([0xef, 0xbb, 0xbf, 0x41]))).toBe('A')
+  })
   it('validates real calendar dates', async () => {
     const { dmyToIso } = await import('@/lib/import/csv')
     expect(dmyToIso('04-01-2026')).toBe('2026-01-04')

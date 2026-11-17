@@ -1,11 +1,44 @@
+// Windows-1252 differs from Latin-1 only in 0x80–0x9F. Decoded by hand so it does
+// not depend on the Node build's ICU/TextDecoder support, which differed between Node 20 (CI) and 22.
+const CP1252_HIGH = '€\u0081‚ƒ„…†‡ˆ‰Š‹Œ\u008DŽ\u008F\u0090‘’“”•–—˜™š›œ\u009DžŸ'
+
+function decodeCp1252(bytes: Uint8Array): string {
+  let out = ''
+  for (let i = 0; i < bytes.length; i++) {
+    const b = bytes[i]
+    out += b >= 0x80 && b <= 0x9f ? CP1252_HIGH[b - 0x80] : String.fromCharCode(b)
+  }
+  return out
+}
+
+/** Strict UTF-8 check (no overlongs, no surrogates, nothing above U+10FFFF). */
+export function isValidUtf8(bytes: Uint8Array): boolean {
+  let i = 0
+  while (i < bytes.length) {
+    const b = bytes[i]
+    let n = 0
+    let min = 0
+    if (b < 0x80) { i++; continue }
+    else if (b >= 0xc2 && b <= 0xdf) { n = 1; min = 0x80 }
+    else if (b >= 0xe0 && b <= 0xef) { n = 2; min = 0x800 }
+    else if (b >= 0xf0 && b <= 0xf4) { n = 3; min = 0x10000 }
+    else return false
+    let cp = b & (0x3f >> n)
+    for (let k = 1; k <= n; k++) {
+      const c = bytes[i + k]
+      if (c === undefined || (c & 0xc0) !== 0x80) return false
+      cp = (cp << 6) | (c & 0x3f)
+    }
+    if (cp < min || cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff)) return false
+    i += n + 1
+  }
+  return true
+}
+
 /** Decodes bank exports: UTF-8 (with or without BOM), falling back to Windows-1252. */
 export function decodeText(bytes: Uint8Array): string {
   if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) return new TextDecoder('utf-8').decode(bytes.subarray(3))
-  try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
-  } catch {
-    return new TextDecoder('windows-1252').decode(bytes)
-  }
+  return isValidUtf8(bytes) ? new TextDecoder('utf-8').decode(bytes) : decodeCp1252(bytes)
 }
 
 /**
