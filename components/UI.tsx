@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import React from 'react'
 
 export function fmt(v: number): string {
@@ -158,24 +159,11 @@ export function AddTransactionForm({owner,cats,onAdd}:{owner:string;cats?:string
   )
 }
 
-/** Import is off until B1 (new per-bank parsers with preview and dedupe). */
-export const IMPORT_ENABLED = false
-
-export function ImportCSV({owner}:{owner:string}) {
-  if (!IMPORT_ENABLED) return null
-  async function handleFile(e:React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if(!file) return
-    const fd = new FormData(); fd.append('file',file); fd.append('owner',owner)
-    fd.append('bank', owner==='conjunta'?'abanca':'activobank')
-    const res = await fetch('/api/import',{method:'POST',body:fd})
-    const data = await res.json()
-    alert(`✅ Importadas: ${data.imported} | Duplicadas: ${data.skipped}${data.errors?.length?' | Erros: '+data.errors.length:''}`)
-    window.location.reload()
-  }
+/** Shortcut to the import page (B1a: preview, dedupe and error report happen there). */
+export function ImportCSV({owner:_owner}:{owner:string}) {
   return (
-    <label style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'var(--rs)',background:'var(--s2)',border:'1px solid var(--bd)',color:'var(--t2)',fontSize:'12px',cursor:'pointer'}}>
-      📥 Importar CSV
-      <input type="file" accept=".csv,.xlsx" onChange={handleFile} style={{display:'none'}}/>
-    </label>
+    <Link href="/importar" style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'var(--rs)',background:'var(--s2)',border:'1px solid var(--bd)',color:'var(--t2)',fontSize:'12px',textDecoration:'none'}}>
+      📥 Importar extrato
+    </Link>
   )
 }

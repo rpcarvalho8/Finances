@@ -33,7 +33,6 @@ describe('disabled endpoints return 410 and never touch the database', () => {
     ['@/app/api/lumeu/[id]/route', 'DELETE'],
     ['@/app/api/business/route', 'GET'],
     ['@/app/api/business/route', 'POST'],
-    ['@/app/api/import/route', 'POST'],
   ]
   for (const [mod, method] of cases) {
     it(`${method} ${mod.replace('@/app', '').replace('/route', '')}`, async () => {

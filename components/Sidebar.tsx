@@ -13,6 +13,7 @@ const NAV = [
   {href:'/ana',label:'Ana',icon:'◉',color:'#f97ec8'},
   {href:'/conjunta',label:'Conta Conjunta',icon:'◈',color:'#f9c67e'},
   {href:'/investimentos',label:'Investimentos',icon:'◈',color:'#6ef9a8'},
+  {href:'/importar',label:'Importar',icon:'⇣',color:'#5ef0d8'},
   {href:'/settings',label:'Definições',icon:'⊙',color:'#7a7a8c'},
 ]
 
