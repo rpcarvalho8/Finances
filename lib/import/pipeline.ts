@@ -165,9 +165,14 @@ export async function commitImport(
       const r = rows[i]
       const res = await tx.execute({
         sql: `INSERT OR IGNORE INTO ledger_movements
-                (household_id, account_id, booked_on, value_on, description, amount_cents, kind, dedupe_key, source, created_by_user_id, import_batch_id)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'import', ?, ?)`,
-        args: [householdId, accountId, r.bookedOn, r.valueOn, r.description, r.amountCents, r.amountCents < 0 ? 'expense' : 'income', keys[i], userId, batchId],
+                (household_id, account_id, booked_on, value_on, description, amount_cents, kind, category_id, dedupe_key, source, created_by_user_id, import_batch_id)
+              VALUES (?, ?, ?, ?, ?, ?, ?, (SELECT id FROM ledger_categories WHERE household_id = ? AND name = ?), ?, 'import', ?, ?)`,
+        args: [
+          householdId, accountId, r.bookedOn, r.valueOn, r.description, r.amountCents,
+          r.kind ?? (r.amountCents < 0 ? 'expense' : 'income'),
+          householdId, r.category ?? null,
+          keys[i], userId, batchId,
+        ],
       })
       inserted += res.rowsAffected
     }

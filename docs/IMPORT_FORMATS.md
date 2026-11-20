@@ -40,6 +40,12 @@ Fontes: cabeçalhos e capturas enviados pelo Rui em 2026-11-13 (não guardados n
 - Colunas: `Data`, `Descrição`, `Valor`, `Saldo`.
 - Vírgula decimal portuguesa; as linhas `Carregamento de ...` aparecem partidas em várias colunas (descrição fragmentada): reconstruir juntando as colunas excedentes à descrição e lendo valor/saldo das duas últimas colunas.
 - Carregamentos = rendimento em espécie; gastos = alimentação. Conta própria, não é dinheiro livre.
+- Implementado na B1b: `lib/import/pluxee.ts`. Regra: 1.ª célula = data (DD/MM/AAAA, DD-MM-AAAA ou AAAA-MM-DD), duas últimas = valor e saldo, o que está no meio = descrição (juntada com ", "). Se o ficheiro não pôs aspas e os valores vierem partidos na vírgula decimal (`-12`,`34`), reconstrói-se a partir das quatro últimas células. Separador `,` ou `;`.
+- Montantes portugueses exatos (`1.234,56 €`), sem vírgula flutuante.
+- Sinais: se o ficheiro tiver algum valor com sinal, usam-se os sinais; se não tiver nenhum, carregamentos são entradas e o resto gastos (com aviso na pré-visualização).
+- Tipos: carregamento → `in_kind_income` (sem categoria); gasto → `expense` na categoria Alimentação; outra entrada (estorno) → `refund`.
+- Vai para uma conta do tipo `meal_card` (criada na página Importar, "+ Nova conta"; a página propõe-na ao escolher este formato).
+- **Por confirmar com um ficheiro real**: separador, aspas e formato da data. A pré-visualização não grava nada, por isso um formato diferente aparece como erros sem estragar dados.
 
 ## ActivoBank — PDF "Extrato combinado"
 

@@ -1,0 +1,8 @@
+Pluxee Exemplo
+Cartão Refeição Exemplo
+Movimentos de 01/01/2026 a 31/01/2026
+Data;Descrição;Valor;Saldo
+02-01-2026;Carregamento de EMPRESA EXEMPLO, LDA;150,00;160,00
+05-01-2026;SUPERMERCADO EXEMPLO A;-23,45;136,55
+07-01-2026;LINHA SEM VALOR;;
+xx-01-2026;DATA ERRADA;-1,00;1,00
