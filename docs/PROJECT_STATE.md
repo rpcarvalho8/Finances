@@ -8,6 +8,31 @@ Finance OS today is a **local-first Next.js 14 household finance dashboard** for
 
 Initial commit: `170427a` (2026-06-09). Phase 0 docs landed on `main` as `fed1990`. On **2026-09-20** (SEC-D01 option 1 + SEC-D02) the committed Enable Banking PEM and `local.db` were **removed from HEAD** in a forward commit. **Git history still contains both files** at `170427a` until an optional future purge. The Enable Banking application key **must be rotated** in the provider console (SEC-004); treat the old UUID as burned.
 
+## Pending work (as of 2026-11-20)
+
+> **Read this first.** Sections below this one were written in Phase 0 and predate the auth (A-series), ledger (A4b) and import (B1a) work: session auth, `withAuth`, household-scoped `ledger_*` tables and the ABANCA importer now exist. Where they say "no route checks authentication" or similar, treat that as stale for the new code (legacy routes may still apply). Authoritative task list: [BACKLOG.md](./BACKLOG.md); decisions: [DECISIONS.md](./DECISIONS.md).
+
+### ⚠ SEC-004 — rotate Open Banking credentials (human action, blocked)
+
+The Enable Banking application key/keypair was committed at `170427a` and **is still in git history**. Treat the old application UUID as burned. Only the owner can rotate it in the Enable Banking console, then set `ENABLE_BANKING_*` in `.env` (never commit). Bank connect stays down until then. Decide separately whether to purge history (SEC-D01 follow-up).
+
+### Other open items
+
+| Item | State | Needs |
+| --- | --- | --- |
+| SEC-006 | partial | Next is 14.2.35; `npm audit --omit=dev` still reports issues |
+| DB-003 | blocked | Decision on quarantining tables not declared in migrations (DB-D01) |
+| OB-001 | blocked | Pick one Open Banking vendor (GoCardless vs Enable Banking), finish it |
+| AI-001 | blocked | AI Gateway + Context Engine; advisor still sends raw SQL rows to the LLM |
+| PROV-001 | blocked | Single broker adapter spike |
+| TRD-001 | blocked | Trading OS aggregate contract |
+| LEG-001 | blocked | Remove/alias duplicates: `/investments`, `/finance`, `/lumeu` |
+
+### Migration from prototype (preserve → refactor → improve)
+
+- Done: household-scoped ledger with integer cents (A4b), import pipeline + ABANCA CSV (B1a), session auth.
+- Remaining: `/rui`, `/ana`, `/conjunta` still hardcode salaries and budget percentages; `TradePage` and `CondoFlowPage` show mock data; other bank importers register in `lib/import/registry.ts`.
+
 ## Product surface (real routes)
 
 | Route | File | What it does |
