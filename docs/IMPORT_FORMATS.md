@@ -59,3 +59,6 @@ Fontes: cabeçalhos e capturas enviados pelo Rui em 2026-11-13 (não guardados n
 - Transferências internas aparecem como `TRF DE PoupeUp - <nome da poupança>` / `TRF P/ PoupeUp ...`: candidatas a TRANSFERÊNCIA INTERNA (B2).
 - O número de conta nunca é guardado em claro: só um identificador derivado (hash) para ligar o ficheiro à conta.
 - Páginas de avisos a ignorar. Títulos das secções de títulos e depósito a prazo ainda por confirmar.
+- Implementado na B1c: `lib/import/activobank.ts` (texto extraído com `pdfjs-dist` no servidor, `lib/import/pdf-text.ts`). Cada valor vai para a coluna (DEBITO, CREDITO, SALDO) cuja margem direita está mais perto; as linhas `SALDO FINAL`, `TRANSPORTE` e totais são ignoradas; uma linha sem datas logo abaixo de um movimento continua o descritivo.
+- Um PDF com várias contas mostra a escolha "Conta dentro do extrato" na página Importar; cada secção importa-se para a sua conta. A primeira importação guarda o hash do número na conta; um ficheiro de outra conta dá aviso.
+- `TRF` de/para PoupeUp (ou qualquer `TRF` dentro da secção PoupeUp) entra como transferência, categoria Transferências.
