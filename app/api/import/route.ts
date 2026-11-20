@@ -11,7 +11,8 @@ export const dynamic = 'force-dynamic'
 export const GET = withAuth(async () => NextResponse.json(IMPORT_SOURCES.map((s) => ({ id: s.id, label: s.label, accept: s.accept, accountKind: s.accountKind ?? null }))))
 
 /**
- * multipart/form-data: file, source, account_id, mode=preview|commit, sha256 (commit only).
+ * multipart/form-data: file, source, account_id, mode=preview|commit, sha256 (commit only),
+ * section (optional: which account of a multi-account statement).
  * Preview writes nothing. Commit re-parses the same file and inserts only new rows.
  */
 export const POST = withAuth(async (req: NextRequest, _ctx, user) => {
@@ -30,15 +31,17 @@ export const POST = withAuth(async (req: NextRequest, _ctx, user) => {
   if (!source) return badRequest('Formato desconhecido')
   const accountId = parseId(String(form.get('account_id') ?? ''))
   if (accountId === null) return badRequest('Conta inválida')
+  const sectionRaw = form.get('section')
+  const section = typeof sectionRaw === 'string' && /^[0-9a-f]{16}$/.test(sectionRaw) ? sectionRaw : null
   const mode = form.get('mode')
   const bytes = new Uint8Array(await file.arrayBuffer())
   try {
-    if (mode === 'preview') return NextResponse.json(await previewImport(user.householdId, accountId, source, bytes))
+    if (mode === 'preview') return NextResponse.json(await previewImport(user.householdId, accountId, source, bytes, { section }))
     if (mode === 'commit') {
       const sha = form.get('sha256')
       if (typeof sha !== 'string' || !/^[0-9a-f]{64}$/.test(sha)) return badRequest('Falta a confirmação da pré-visualização')
       const fileName = (file as File).name?.split(/[\\/]/).pop() ?? null
-      return NextResponse.json(await commitImport(user.householdId, user.userId, accountId, source, bytes, { expectedSha256: sha, fileName }))
+      return NextResponse.json(await commitImport(user.householdId, user.userId, accountId, source, bytes, { expectedSha256: sha, fileName, section }))
     }
     return badRequest('Modo inválido')
   } catch (err) {

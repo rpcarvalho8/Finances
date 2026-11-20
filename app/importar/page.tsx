@@ -13,6 +13,8 @@ type Preview = {
   rows: Array<{ line: number; date: string; description: string; amount_cents: number; status: 'new' | 'duplicate' }>
   errors: Array<{ line: number; error: string }>
   warnings: string[]
+  sections: Array<{ key: string; label: string; rows: number }> | null
+  section: string | null
 }
 
 const eur = (cents: number) => (cents / 100).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
@@ -25,6 +27,7 @@ export default function ImportPage() {
   const [accountId, setAccountId] = useState('')
   const [sourceId, setSourceId] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [section, setSection] = useState<string | null>(null)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
@@ -47,6 +50,7 @@ export default function ImportPage() {
   function chooseSource(id: string) {
     setSourceId(id)
     setPreview(null)
+    setSection(null)
     const kind = sources.find((s) => s.id === id)?.accountKind
     const match = kind ? accounts.find((a) => a.kind === kind) : null
     if (match) setAccountId(String(match.id))
@@ -64,25 +68,26 @@ export default function ImportPage() {
 
   const owners = Array.from(new Map(accounts.map((a) => [a.ownerKey, a.owner])).entries())
 
-  function form(mode: 'preview' | 'commit') {
+  function form(mode: 'preview' | 'commit', sectionKey = section) {
     const fd = new FormData()
     fd.append('file', file as File)
     fd.append('source', sourceId)
     fd.append('account_id', accountId)
     fd.append('mode', mode)
     if (mode === 'commit' && preview) fd.append('sha256', preview.fileSha256)
+    if (sectionKey) fd.append('section', sectionKey)
     return fd
   }
 
-  async function send(mode: 'preview' | 'commit') {
+  async function send(mode: 'preview' | 'commit', sectionKey = section) {
     if (!file) return
     setBusy(true)
     setMessage(null)
     try {
-      const res = await fetch('/api/import', { method: 'POST', body: form(mode) })
+      const res = await fetch('/api/import', { method: 'POST', body: form(mode, sectionKey) })
       const data = await res.json()
       if (!res.ok) { setMessage({ ok: false, text: data.error ?? 'Erro' }); return }
-      if (mode === 'preview') setPreview(data)
+      if (mode === 'preview') { setPreview(data); setSection(data.section ?? null) }
       else {
         setPreview(null)
         setMessage({ ok: true, text: `Importados ${data.inserted} movimentos. Já existiam ${data.duplicate}.${data.error ? ` ${data.error} linhas com erro ignoradas.` : ''}` })
@@ -110,7 +115,7 @@ export default function ImportPage() {
             </select>
           </label>
           <label style={{ fontSize: '12px', color: 'var(--m)' }}>Ficheiro
-            <input type="file" accept={accept} onChange={(e) => { setFile(e.target.files?.[0] ?? null); setPreview(null) }} style={inp} />
+            <input type="file" accept={accept} onChange={(e) => { setFile(e.target.files?.[0] ?? null); setPreview(null); setSection(null) }} style={inp} />
           </label>
           <button disabled={!file || busy} onClick={() => send('preview')} style={btn(false)}>Pré-visualizar</button>
         </div>
@@ -154,6 +159,13 @@ export default function ImportPage() {
               <span>Já existentes: <b>{preview.counts.duplicate}</b></span>
               <span>Com erro: <b>{preview.counts.error}</b></span>
             </div>
+            {preview.sections && preview.sections.length > 1 && (
+              <label style={{ display: 'block', marginTop: '10px', fontSize: '12px', color: 'var(--m)' }}>Conta dentro do extrato
+                <select value={preview.section ?? ''} onChange={(e) => { setSection(e.target.value); send('preview', e.target.value) }} style={{ ...inp, maxWidth: '360px', display: 'block' }}>
+                  {preview.sections.map((s) => <option key={s.key} value={s.key}>{s.label} · {s.rows} movimentos</option>)}
+                </select>
+              </label>
+            )}
             {preview.alreadyImported && <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--amber)' }}>Este ficheiro já foi importado para esta conta. Só entram movimentos que ainda não existam.</div>}
             {preview.warnings.map((w, i) => <div key={i} style={{ marginTop: '6px', fontSize: '12px', color: 'var(--amber)' }}>{w}</div>)}
             {preview.errors.slice(0, 50).map((e) => <div key={e.line} style={{ marginTop: '4px', fontSize: '12px', color: '#f96e6e' }}>Linha {e.line}: {e.error}</div>)}

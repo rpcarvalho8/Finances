@@ -24,6 +24,7 @@
     "date-fns": "^3.6.0",
     "next": "14.2.35",
     "papaparse": "^5.4.1",
+    "pdfjs-dist": "5.4.394",
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^2.15.4",

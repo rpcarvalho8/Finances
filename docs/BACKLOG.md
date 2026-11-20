@@ -267,6 +267,15 @@ Status keys: `done` | `open` | `blocked` (needs decision in [DECISIONS.md](./DEC
 
 ---
 
+## B1c — ActivoBank PDF ("Extrato combinado")
+
+- **Objective:** Import the combined PDF statement, one account section at a time, into the matching ledger account.
+- **Dependencies:** B1a.
+- **Acceptance criteria:** text read server-side only (pdfjs-dist, pinned, no PDF stored); debit/credit columns become signed cents; years derived from the statement period (Dec→Jan); wrapped descriptions joined; opening balance checked; several accounts in one PDF chosen by section; account number never stored in clear (hash only, warning when the file belongs to another account); PoupeUp transfers marked as transfers.
+- **Status:** `done` (2026-11-20). Code: `lib/import/pdf-text.ts`, `lib/import/activobank.ts`, section support in `lib/import/pipeline.ts` and `/importar`. Tests: `tests/activobank.test.ts` with a synthetic PDF (`tests/fixtures/activobank/generate.py`). To confirm with a real file: column positions, term-deposit and securities sections.
+
+---
+
 ## Phase 0 closure checklist
 
 - [x] Audit evidence collected

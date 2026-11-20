@@ -13,7 +13,7 @@
 import crypto from 'crypto'
 import { getDb } from '../db'
 import { LedgerError } from '../ledger'
-import type { ImportSource, ParsedRow, RowError } from './types'
+import type { ImportSource, ParsedRow, RowError, StatementSection } from './types'
 
 export const MAX_FILE_BYTES = 5 * 1024 * 1024
 export const MAX_ROWS = 20_000
@@ -36,6 +36,9 @@ export type Preview = {
   rows: PreviewRow[]
   errors: RowError[]
   warnings: string[]
+  /** Accounts inside a multi-account statement, and the one shown. */
+  sections: StatementSection[] | null
+  section: string | null
 }
 
 export function sha256Hex(bytes: Uint8Array): string {
@@ -70,22 +73,29 @@ export function balanceWarnings(rows: ParsedRow[]): string[] {
     : []
 }
 
-async function accountOf(householdId: number, accountId: number): Promise<{ id: number; name: string }> {
+async function accountOf(householdId: number, accountId: number): Promise<{ id: number; name: string; ref: string | null }> {
   const { rows } = await getDb().execute({
-    sql: `SELECT id, name FROM ledger_accounts WHERE id = ? AND household_id = ? AND archived_at IS NULL`,
+    sql: `SELECT id, name, external_ref_hash FROM ledger_accounts WHERE id = ? AND household_id = ? AND archived_at IS NULL`,
     args: [accountId, householdId],
   })
   if (!rows[0]) throw new LedgerError('Conta não encontrada', 404)
-  return { id: Number(rows[0].id), name: String(rows[0].name) }
+  return { id: Number(rows[0].id), name: String(rows[0].name), ref: rows[0].external_ref_hash === null ? null : String(rows[0].external_ref_hash) }
 }
 
-type Analysed = { preview: Preview; rows: ParsedRow[]; keys: string[]; isNew: boolean[] }
+export type ImportOptions = { section?: string | null }
 
-async function analyse(householdId: number, accountId: number, source: ImportSource, bytes: Uint8Array): Promise<Analysed> {
+type Analysed = { preview: Preview; rows: ParsedRow[]; keys: string[]; isNew: boolean[]; accountRef: string | null; accountHasRef: boolean }
+
+async function analyse(householdId: number, accountId: number, source: ImportSource, bytes: Uint8Array, opts: ImportOptions = {}): Promise<Analysed> {
   if (bytes.byteLength === 0) throw new LedgerError('Ficheiro vazio', 400)
   if (bytes.byteLength > MAX_FILE_BYTES) throw new LedgerError('Ficheiro demasiado grande (máx. 5 MB)', 413)
-  const account = await accountOf(householdId, accountId)
-  const parsed = source.parse(bytes)
+  const accountFull = await accountOf(householdId, accountId)
+  const account = { id: accountFull.id, name: accountFull.name }
+  const parsed = await source.parse(bytes, { section: opts.section ?? null })
+  const refWarning =
+    parsed.accountRef && accountFull.ref && parsed.accountRef !== accountFull.ref
+      ? ['Este extrato parece ser de outra conta: o número não coincide com o das importações anteriores para esta conta.']
+      : []
   if (parsed.rows.length > MAX_ROWS) throw new LedgerError(`Demasiadas linhas (máx. ${MAX_ROWS})`, 413)
 
   // Oldest first, stable on the file line: file order is not trusted (ABANCA mixes it).
@@ -116,13 +126,15 @@ async function analyse(householdId: number, accountId: number, source: ImportSou
     counts: { total: rows.length + parsed.errors.length, new: nNew, duplicate: rows.length - nNew, error: parsed.errors.length },
     rows: rows.map((r, i) => ({ line: r.line, date: r.bookedOn, description: r.description, amount_cents: r.amountCents, status: isNew[i] ? 'new' : 'duplicate' })),
     errors: parsed.errors,
-    warnings: [...parsed.warnings, ...balanceWarnings(rows)],
+    warnings: [...refWarning, ...parsed.warnings, ...balanceWarnings(rows)],
+    sections: parsed.sections ?? null,
+    section: parsed.section ?? null,
   }
-  return { preview, rows, keys, isNew }
+  return { preview, rows, keys, isNew, accountRef: parsed.accountRef ?? null, accountHasRef: accountFull.ref !== null }
 }
 
-export async function previewImport(householdId: number, accountId: number, source: ImportSource, bytes: Uint8Array): Promise<Preview> {
-  return (await analyse(householdId, accountId, source, bytes)).preview
+export async function previewImport(householdId: number, accountId: number, source: ImportSource, bytes: Uint8Array, opts: ImportOptions = {}): Promise<Preview> {
+  return (await analyse(householdId, accountId, source, bytes, opts)).preview
 }
 
 export type CommitResult = { batchId: number; inserted: number; duplicate: number; error: number }
@@ -133,9 +145,9 @@ export async function commitImport(
   accountId: number,
   source: ImportSource,
   bytes: Uint8Array,
-  opts: { expectedSha256: string; fileName?: string | null },
+  opts: { expectedSha256: string; fileName?: string | null; section?: string | null },
 ): Promise<CommitResult> {
-  const { preview, rows, keys, isNew } = await analyse(householdId, accountId, source, bytes)
+  const { preview, rows, keys, isNew, accountRef, accountHasRef } = await analyse(householdId, accountId, source, bytes, { section: opts.section })
   if (preview.fileSha256 !== opts.expectedSha256) throw new LedgerError('O ficheiro mudou desde a pré-visualização. Volta a pré-visualizar.', 409)
   if (rows.length === 0) throw new LedgerError('Não há movimentos válidos para importar', 400)
 
@@ -159,6 +171,10 @@ export async function commitImport(
       ],
     })
     const batchId = Number(b.lastInsertRowid)
+    // Remember which source account this is (hash only), to warn if another one is imported here later.
+    if (accountRef && !accountHasRef) {
+      await tx.execute({ sql: `UPDATE ledger_accounts SET external_ref_hash = ? WHERE id = ? AND household_id = ? AND external_ref_hash IS NULL`, args: [accountRef, accountId, householdId] })
+    }
     let inserted = 0
     for (let i = 0; i < rows.length; i++) {
       if (!isNew[i]) continue
